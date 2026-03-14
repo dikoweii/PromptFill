@@ -265,18 +265,14 @@ export const Variable = ({
       {/* 2. 中部：词条区域 (圆角渐变框) */}
       <div className="px-3 pb-2 flex-1 flex flex-col min-h-0">
         <div 
-          className={`
-            flex-1 overflow-y-auto custom-scrollbar rounded-2xl flex flex-col
-            ${isDarkMode 
-              ? 'border border-white/10' 
-              : 'border border-gray-200/50'}
-          `}
+          className="flex-1 overflow-y-auto custom-scrollbar rounded-2xl flex flex-col"
           style={{
             maxHeight: isMobileDevice ? '50vh' : '400px',
             background: isDarkMode 
-              ? 'linear-gradient(#252525, #252525) padding-box, linear-gradient(0deg, #646464 0%, rgba(0, 0, 0, 0) 100%) border-box'
+              ? 'linear-gradient(#252525, #252525) padding-box, linear-gradient(0deg, #646464 0%, rgba(0, 0, 0, 0) 20%) border-box'
               : 'linear-gradient(#E8E3DD, #E8E3DD) padding-box, linear-gradient(0deg, #FFFFFF 0%, rgba(255, 255, 255, 0) 100%) border-box',
-            boxShadow: 'inset 0px 2px 4px 0px rgba(0, 0, 0, 0.2)'
+            border: '1px solid transparent',
+            boxShadow: 'inset 0px 2px 4px 0px rgba(0, 0, 0, 0.3)'
           }}
         >
           {/* AI 智能词条部分 */}

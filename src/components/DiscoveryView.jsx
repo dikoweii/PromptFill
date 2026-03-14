@@ -8,6 +8,7 @@ import { Sidebar } from './Sidebar';
 import { TagSidebar } from './TagSidebar';
 import { TemplateCarousel } from './TemplateCarousel';
 import { MobileVideoFirstFrame } from './mobile';
+import { OptimizedImage } from './OptimizedImage';
 import { TAG_LABELS } from '../constants/styles';
 import { openExternalLink } from '../utils/platform';
 
@@ -15,103 +16,6 @@ import { openExternalLink } from '../utils/platform';
  * FuCharacter 组件 - 可交互的福字
  * hover 时轻微晃动，点击旋转180度并显示祝福语
  */
-const FuCharacter = React.memo(({ isDarkMode }) => {
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
-
-  const handleClick = useCallback(() => {
-    setIsFlipped(prev => !prev);
-  }, []);
-
-  return (
-    <div className="flex items-center justify-center select-none mt-2">
-      {/* 左联 - 竖排"福到心顺" */}
-      <div
-        className="flex flex-col items-center justify-center gap-0.5 flex-shrink-0"
-        style={{
-          transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-          opacity: isFlipped ? 1 : 0,
-          width: isFlipped ? '28px' : '0px',
-          marginRight: isFlipped ? '6px' : '0px',
-          overflow: 'hidden',
-        }}
-      >
-        {'福到心顺'.split('').map((char, i) => (
-          <span
-            key={i}
-            className={`text-[13px] font-bold leading-snug ${isDarkMode ? 'text-amber-400/90' : 'text-amber-700/80'}`}
-            style={{
-              transition: `all 0.35s cubic-bezier(0.4, 0, 0.2, 1) ${0.15 + i * 0.07}s`,
-              opacity: isFlipped ? 1 : 0,
-              transform: isFlipped ? 'translateY(0) scale(1)' : 'translateY(-4px) scale(0.8)',
-            }}
-          >
-            {char}
-          </span>
-        ))}
-      </div>
-
-      {/* 福字 */}
-      <div
-        className="relative cursor-pointer flex-shrink-0"
-        onClick={handleClick}
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
-      >
-        <img
-          src="/FU.svg"
-          alt="福"
-          className="w-16 h-16 lg:w-[72px] lg:h-[72px] drop-shadow-lg"
-          draggable={false}
-          style={{
-            transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-            transform: isFlipped ? 'rotate(180deg)' : 'rotate(0deg)',
-            animation: isHovering && !isFlipped ? 'fu-wobble 0.6s ease-in-out infinite' : 'none',
-          }}
-        />
-      </div>
-
-      {/* 右联 - 竖排"马到功成" */}
-      <div
-        className="flex flex-col items-center justify-center gap-0.5 flex-shrink-0"
-        style={{
-          transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-          opacity: isFlipped ? 1 : 0,
-          width: isFlipped ? '28px' : '0px',
-          marginLeft: isFlipped ? '6px' : '0px',
-          overflow: 'hidden',
-        }}
-      >
-        {'马到功成'.split('').map((char, i) => (
-          <span
-            key={i}
-            className={`text-[13px] font-bold leading-snug ${isDarkMode ? 'text-amber-400/90' : 'text-amber-700/80'}`}
-            style={{
-              transition: `all 0.35s cubic-bezier(0.4, 0, 0.2, 1) ${0.15 + i * 0.07}s`,
-              opacity: isFlipped ? 1 : 0,
-              transform: isFlipped ? 'translateY(0) scale(1)' : 'translateY(-4px) scale(0.8)',
-            }}
-          >
-            {char}
-          </span>
-        ))}
-      </div>
-
-      <style>{`
-        @keyframes fu-wobble {
-          0%, 100% { transform: rotate(0deg); }
-          15% { transform: rotate(4deg); }
-          30% { transform: rotate(-4deg); }
-          45% { transform: rotate(3deg); }
-          60% { transform: rotate(-2deg); }
-          75% { transform: rotate(1deg); }
-          90% { transform: rotate(-1deg); }
-        }
-      `}</style>
-    </div>
-  );
-});
-FuCharacter.displayName = 'FuCharacter';
 
 /**
  * VideoCard 组件 - 瀑布流中的视频卡片
@@ -147,12 +51,12 @@ const VideoCard = React.memo(({ videoUrl, imageUrl, alt }) => {
     >
       {/* 封面图层 - hover 时淡出 */}
       {imageUrl && (
-        <img
+        <OptimizedImage
           src={imageUrl}
           alt={alt}
           className={`w-full h-auto object-cover transition-opacity duration-300 ${isHovered ? 'opacity-0' : 'opacity-100'}`}
           referrerPolicy="no-referrer"
-          loading="lazy"
+          priority={5}
         />
       )}
       {/* 视频层 - 始终存在，hover 时显示 */}
@@ -212,7 +116,8 @@ export const DiscoveryView = React.memo(({
     setSelectedType,
     handleAddTemplate,
     TEMPLATE_TAGS,
-    availableTags
+    availableTags,
+    appVersion
   }) => {
     const [columnCount, setColumnCount] = useState(1);
     const [columnGap, setColumnGap] = useState(20); // Default to gap-5 (20px)
@@ -221,13 +126,19 @@ export const DiscoveryView = React.memo(({
     useEffect(() => {
       const getColumnInfo = () => {
         const width = window.innerWidth;
+        const isVideoType = selectedType === 'video';
+        
         if (masonryStyleKey === 'poster') {
-          return { count: width >= 1280 ? 3 : (width >= 640 ? 2 : 1), gap: 12 };
+          // 视频类型下桌面端改为 2 列，避免横屏视频太小
+          const count = width >= 1280 ? (isVideoType ? 2 : 3) : (width >= 640 ? 2 : 1);
+          return { count, gap: 12 };
         } else if (masonryStyleKey === 'classic' || masonryStyleKey === 'minimal') {
-          const count = width >= 1280 ? 4 : (width >= 1024 ? 3 : (width >= 640 ? 2 : 1));
+          // 视频类型下桌面端也限制在 2 列
+          const count = width >= 1280 ? (isVideoType ? 2 : 4) : (width >= 1024 ? (isVideoType ? 2 : 3) : (width >= 640 ? 2 : 1));
           return { count, gap: 16 };
         } else if (masonryStyleKey === 'compact') {
-          const count = width >= 1280 ? 5 : (width >= 1024 ? 4 : (width >= 640 ? 3 : 2));
+          // 视频类型下桌面端也限制在 2 列
+          const count = width >= 1280 ? (isVideoType ? 2 : 5) : (width >= 1024 ? (isVideoType ? 2 : 4) : (width >= 640 ? (isVideoType ? 2 : 3) : 2));
           return { count, gap: 8 };
         } else if (masonryStyleKey === 'list') {
           return { count: 1, gap: 12 };
@@ -244,7 +155,7 @@ export const DiscoveryView = React.memo(({
       handleResize();
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
-    }, [masonryStyleKey]);
+    }, [masonryStyleKey, selectedType]);
   
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
@@ -371,12 +282,13 @@ export const DiscoveryView = React.memo(({
               >
                 <div className="relative w-full bg-gray-50/5">
                   {t_item.imageUrl ? (
-                    <img
+                    <OptimizedImage
                       src={t_item.imageUrl}
                       alt={getLocalized(t_item.name, language)}
                       className="w-full h-auto block"
                       referrerPolicy="no-referrer"
-                      loading="lazy"
+                      priority={10}
+                      isDarkMode={isDarkMode}
                     />
                   ) : t_item.type === 'video' && t_item.videoUrl ? (
                     <MobileVideoFirstFrame
@@ -435,14 +347,14 @@ export const DiscoveryView = React.memo(({
       >
           <div className="flex-1 flex flex-col lg:flex-row gap-6 lg:gap-8 xl:gap-12 overflow-hidden pb-4 lg:pb-8 pt-0 px-2 lg:px-6">
               {/* Left Side: Logo & Slogan & Create Button */}
-              <header className="flex flex-col items-center lg:items-start lg:w-[280px] xl:w-[320px] flex-shrink-0 px-4 lg:pl-6 lg:pr-2 lg:py-6">
+              <header className="flex flex-col justify-between items-center lg:items-start lg:w-[280px] xl:w-[320px] flex-shrink-0 px-4 lg:pl-6 lg:pr-2 lg:py-6">
                   {/* 区块1: Logo + 描述 + Slogan */}
                   <div className="flex flex-col items-center lg:items-start gap-6 w-full">
                       <div className="w-full max-w-[320px] scale-75 sm:scale-85 lg:scale-90 xl:scale-100 origin-center lg:origin-left flex flex-col gap-3">
                           <h1 className="sr-only">提示词填空器 (Prompt Fill) - 专业的 AI 提示词管理与优化工具</h1>
-                          <img 
-                              src={isDarkMode ? "/Title_Dark.svg" : "/Title.svg"} 
-                              alt="提示词填空器 (Prompt Fill) - 专业的 AI 提示词管理与优化工具" 
+                          <img
+                              src={isDarkMode ? "/icons/Title_Dark.svg" : "/icons/Title.svg"}
+                              alt="提示词填空器 (Prompt Fill) - 专业的 AI 提示词管理与优化工具"
                               className="w-full h-auto"
                           />
                           <p className={`text-xs lg:text-sm font-medium leading-relaxed opacity-80 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -453,12 +365,8 @@ export const DiscoveryView = React.memo(({
                         <AnimatedSlogan isActive={isSloganActive} language={language} isDarkMode={isDarkMode} />
                       </div>
                   </div>
-                  {/* 区块2: 福字交互区域 - 在剩余空间中垂直居中 */}
-                  <div className="w-full flex-1 flex items-center justify-center">
-                    <FuCharacter isDarkMode={isDarkMode} />
-                  </div>
-                  {/* 区块3: 新建模版按钮 - 贴底 */}
-                  <div className="w-full flex-shrink-0">
+                  {/* 新建模版按钮 - 贴底，与瀑布流底部对齐 */}
+                  <div className="w-full flex-shrink-0 translate-y-6">
                       <PremiumButton
                           onClick={handleAddTemplate}
                           icon={Plus}
@@ -507,12 +415,13 @@ export const DiscoveryView = React.memo(({
                                                           alt={getLocalized(t_item.name, language)}
                                                       />
                                                   ) : t_item.imageUrl ? (
-                                                      <img 
+                                                      <OptimizedImage
                                                           src={t_item.imageUrl} 
                                                           alt={getLocalized(t_item.name, language)} 
                                                           className="w-full h-auto object-cover transition-transform duration-500 ease-out group-hover:scale-110"
                                                           referrerPolicy="no-referrer"
-                                                          loading="lazy"
+                                                          priority={15}
+                                                          isDarkMode={isDarkMode}
                                                       />
                                                   ) : (
                                                   <div className="w-full aspect-[3/4] bg-gray-100/5 flex items-center justify-center text-gray-300">
@@ -545,26 +454,41 @@ export const DiscoveryView = React.memo(({
               </section>
           </div>
 
-          {/* Bottom Bar: Trigger on Left, Author Info on Right */}
-          <footer className="mt-auto flex items-center justify-between px-8 py-6 relative z-20">
-              <div />
-
-              <div className="flex flex-col items-end gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
-                  <div className={`flex items-center gap-3 text-[11px] font-medium px-4 py-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-700'}`}>
+          {/* Bottom Bar: Author Info on Right */}
+          <footer className="mt-auto flex items-center justify-end px-8 py-6 relative z-20">
+              <div className={`flex items-center gap-3 text-[11px] font-medium px-4 py-2 opacity-60 hover:opacity-100 transition-opacity ${isDarkMode ? 'text-gray-400' : 'text-gray-700'}`}>
+                      {/* 版本号 */}
+                      {appVersion && (
+                          <>
+                              <p className={`font-mono ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>v{appVersion}</p>
+                              <div className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-400'}`} />
+                          </>
+                      )}
                       <p>Made by CornerStudio</p>
                       <div className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-400'}`} />
                       <p>公众号：角落工作室</p>
                       <div className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-gray-600' : 'bg-gray-400'}`} />
                       <p>Wechat: tanshilongmario</p>
-                      <button 
-                          onClick={() => openExternalLink('https://github.com/TanShilongMario/PromptFill/')}
+                      {/* App Store 按钮 */}
+                      <button
+                          onClick={() => openExternalLink('https://apps.apple.com/cn/app/%E6%8F%90%E7%A4%BA%E8%AF%8D%E5%A1%AB%E7%A9%BA%E5%99%A8/id6758574801')}
                           className={`ml-2 inline-flex items-center justify-center w-6 h-6 rounded-full text-white transition-all duration-300 hover:scale-110 shadow-lg ${isDarkMode ? 'bg-gray-700 hover:bg-orange-500' : 'bg-gray-800 hover:bg-orange-500'}`}
+                          title="App Store"
+                      >
+                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                          </svg>
+                      </button>
+                      {/* GitHub 按钮 */}
+                      <button
+                          onClick={() => openExternalLink('https://github.com/TanShilongMario/PromptFill/')}
+                          className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-white transition-all duration-300 hover:scale-110 shadow-lg ${isDarkMode ? 'bg-gray-700 hover:bg-orange-500' : 'bg-gray-800 hover:bg-orange-500'}`}
+                          title="GitHub"
                       >
                           <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                               <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
                           </svg>
                       </button>
-                  </div>
               </div>
           </footer>
       </div>

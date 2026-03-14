@@ -91,6 +91,50 @@ npm run sync-data
 
 ---
 
+## 6.5 智能拆分功能发版检查 (Smart Split Release)
+
+> ⚠️ **推送前必须完成以下所有项目**，否则会导致调试接口暴露或 AI 拆分功能不可用。
+
+### 🔴 调试模式（必须关闭）
+
+- **`.env.local`**：确认 `VITE_DEBUG_SPLIT` 未设置为 `true`，或该文件已被 `.gitignore` 排除（默认已排除）。
+- **Vercel 环境变量**：确认 Vercel 项目设置中**没有**配置 `VITE_DEBUG_SPLIT=true`，否则会在生产环境暴露调试入口。
+- **验证方法**：本地执行 `npm run build && npm run preview`，确认"智能拆分"按钮旁**不显示**「🐛调试」按钮。
+
+### 🟡 后端代码同步（必须更新服务器）
+
+- **`后端index.js`** 包含智能拆分的核心 `POLISH_AND_SPLIT` 系统提示词及 JSON 健壮解析逻辑，本地修改后**需手动同步至宝塔服务器**。
+- **目标服务器路径**：`/www/wwwroot/promptfillapi/index.js`（或你的实际部署路径）
+- **同步步骤**：
+    1. 将本地最新的 `后端index.js` 内容上传/替换至服务器对应文件。
+    2. 在宝塔「Node 项目管理」中点击**重启**，使新系统提示词生效。
+    3. **验证**：在前端触发一次智能拆分，打开 DevTools Network 确认请求走 `/api/polish-and-split`，且返回正常 JSON。
+
+### 🟡 调试系统提示词转正式流程（调试完成后执行）
+
+> 当你在前端调试完系统提示词，准备发正式版时，需按以下步骤将提示词"归还"后端：
+
+1. **同步提示词到后端**：将 `src/App.jsx` 中 `getDebugSystemPrompt` 函数里拼出的完整系统提示词，复制并替换到 `后端index.js` 的 `POLISH_AND_SPLIT` 函数模板字符串中。
+2. **清理前端调试代码**（可选，建议做）：
+   - 删除 `App.jsx` 中的 `getDebugSystemPrompt` 回调（约第 1299 行）
+   - 删除 `App.jsx` 中的 `handleDebugSplitRun` 回调（约第 1398 行）
+   - 删除 `App.jsx` 中传给 `TemplateEditor` 的 `onDebugSplitRun` 和 `getDebugSystemPrompt` props
+   - `aiService.js` 中的 `polishAndSplitDirect` 函数可保留（有守卫条件，正式路径不触发），也可删除
+3. **关闭调试按钮**：确认 `VITE_DEBUG_SPLIT` 未在 Vercel 生产环境配置（`EditorToolbar.jsx` 中的调试按钮由此环境变量控制，无需改代码）。
+4. 按本节"后端代码同步"步骤上传并重启服务器。
+
+### 🟢 功能验证
+
+- [ ] 对一段**无变量**的纯文本执行智能拆分，结果变量数量在 2-5 个之间。
+- [ ] 对一段**已有变量**的模板执行智能拆分，确认弹出「当前已有变量，确认重新拆分？」提示框。
+- [ ] 拆分成功后，工具栏出现「重置」按钮（PremiumButton 样式）。
+- [ ] 点击「重置」，弹出左右对比弹窗，左侧显示拆分前内容，右侧显示拆分后内容。
+- [ ] 点击「还原」，内容正确回退至拆分前，「重置」按钮消失。
+- [ ] 切换模板后，「重置」按钮自动消失（快照已清除）。
+- [ ] 拆分失败时（如断网），内容自动回滚，弹出失败提示，**不留下半截变量**。
+
+---
+
 ## 7. 存储架构 (Storage)
 
 ### IndexedDB 迁移
@@ -102,9 +146,16 @@ npm run sync-data
 
 ## 8. 发版最终检查清单
 
+**通用**
 1. [ ] `SYSTEM_DATA_VERSION` 已递增？
 2. [ ] 已运行 `npm run sync-data`？
 3. [ ] `public/data/` 下的 JSON 是否已上传至宝塔 `/api/data` 目录？
 4. [ ] 宝塔 Node 项目是否已重启？
 5. [ ] 手机端和电脑端的更新日志是否已同步？
 6. [ ] 本地代码是否已执行 `git push`？
+
+**智能拆分相关（有改动时必查）**
+7. [ ] `.env.local` 的 `VITE_DEBUG_SPLIT=true` 未提交 / Vercel 未配置此变量？
+8. [ ] `后端index.js` 最新版本已同步至宝塔服务器并重启？
+9. [ ] 生产构建（`npm run build`）后确认无调试按钮可见？
+10. [ ] 若本次调试了系统提示词：`getDebugSystemPrompt` 中的最新提示词已同步至 `后端index.js` 的 `POLISH_AND_SPLIT` 函数？

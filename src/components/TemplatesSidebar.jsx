@@ -56,7 +56,7 @@ export const TemplatesSidebar = React.memo(({
       {/* Mobile Overlay */}
       {isMobile && isTemplatesDrawerOpen && (
         <div 
-          className="fixed inset-0 bg-black/10 backdrop-blur-[2px] z-[290] animate-in fade-in duration-300"
+          className="fixed inset-0 bg-black/10 backdrop-blur-[2px] z-[290]"
           onClick={() => setIsTemplatesDrawerOpen(false)}
         />
       )}
@@ -75,13 +75,11 @@ export const TemplatesSidebar = React.memo(({
       >
         <div className={`flex flex-col w-full h-full ${isMobile ? (isDarkMode ? 'bg-[#242120]/95' : 'bg-white/95') : 'bg-transparent'} backdrop-blur-sm rounded-3xl md:rounded-2xl`}>
           {/* --- Sidebar Header with Tools --- */}
-      <div className="flex-shrink-0 px-6 pt-4 pb-4">
-         <div className="flex items-center justify-between mb-6">
-             <div className="flex flex-col items-start gap-1">
-                  <h1 className={`${isMobile ? 'text-[18px]' : 'text-[22px]'} font-black tracking-tight text-orange-500 flex items-baseline gap-2`}>
-                      提示词填空器
-                  </h1>
-             </div>
+      <div className="px-6 pb-4 flex-shrink-0" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
+         <div className="flex items-center justify-between mb-[14px] min-h-10">
+              <h1 className={`text-[20px] font-bold tracking-tight flex items-baseline gap-2 ${isDarkMode ? 'text-[#CDCDCD]' : 'text-[#5D5D5D]'}`}>
+                  模版列表
+              </h1>
              
              <div className="flex items-center">
                   <PremiumButton

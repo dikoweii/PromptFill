@@ -15,6 +15,7 @@ const PRECACHE_URLS = [
 
 // 图片域名白名单（只缓存这些域名的图片）
 const IMAGE_DOMAINS = [
+  's3.bmp.ovh',           // 模板图片主要存储域名
   'aipromptfill.com',
   'img.freepik.com',
   'images.unsplash.com',
@@ -22,7 +23,6 @@ const IMAGE_DOMAINS = [
   'i.imgur.com',
   'github.com',
   'raw.githubusercontent.com',
-  // 添加你的图片 CDN 域名
 ];
 
 // 检查是否是图片 URL
@@ -89,36 +89,43 @@ self.addEventListener('fetch', (event) => {
   // 只处理 GET 请求
   if (request.method !== 'GET') return;
 
-  // 策略 1: 图片缓存 - Network First with Cache Fallback
-  // 优先从网络获取最新图片，失败则使用缓存
+  // 策略 1: 图片缓存 - Cache First with Network Fallback
+  // 优先使用缓存，未命中时才请求网络（适合瀑布流大量图片场景）
   if (isImage(url.href) && shouldCacheImage(url.href)) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          // 检查响应是否有效
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-
-          // 克隆响应并缓存
-          const responseToCache = response.clone();
-          caches.open(IMAGE_CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
-
-          return response;
-        })
-        .catch(() => {
-          // 网络失败，从缓存读取
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-              console.log('[SW] 从缓存加载图片:', url.href);
-              return cachedResponse;
+      caches.match(request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        
+        // 缓存未命中，从网络获取
+        return fetch(request)
+          .then((response) => {
+            // 检查响应是否有效（跨域图片类型为 opaque）
+            if (!response || response.status !== 200) {
+              // 对于 opaque 响应（跨域），仍然缓存
+              if (response && response.type === 'opaque') {
+                const responseToCache = response.clone();
+                caches.open(IMAGE_CACHE_NAME).then((cache) => {
+                  cache.put(request, responseToCache);
+                });
+              }
+              return response;
             }
-            // 如果缓存也没有，返回失败
-            throw new Error('Image not in cache');
+
+            // 克隆响应并缓存
+            const responseToCache = response.clone();
+            caches.open(IMAGE_CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+
+            return response;
+          })
+          .catch((error) => {
+            console.warn('[SW] 图片加载失败:', url.href, error);
+            return new Response('Image load failed', { status: 503 });
           });
-        })
+      })
     );
     return;
   }

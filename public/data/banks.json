@@ -5843,6 +5843,640 @@
           "en": "Shaky Tracking"
         }
       ]
+    },
+    "weather_condition": {
+      "label": {
+        "cn": "天气状况",
+        "en": "Weather Condition"
+      },
+      "category": "other",
+      "options": [
+        {
+          "cn": "晴朗",
+          "en": "Sunny"
+        },
+        {
+          "cn": "多云",
+          "en": "Cloudy"
+        },
+        {
+          "cn": "阴天",
+          "en": "Overcast"
+        },
+        {
+          "cn": "小雨",
+          "en": "Light Rain"
+        },
+        {
+          "cn": "中雨",
+          "en": "Moderate Rain"
+        },
+        {
+          "cn": "大雨",
+          "en": "Heavy Rain"
+        },
+        {
+          "cn": "雷阵雨",
+          "en": "Thunderstorm"
+        },
+        {
+          "cn": "小雪",
+          "en": "Light Snow"
+        },
+        {
+          "cn": "大雪",
+          "en": "Heavy Snow"
+        },
+        {
+          "cn": "雾",
+          "en": "Foggy"
+        },
+        {
+          "cn": "霾",
+          "en": "Hazy"
+        }
+      ]
+    },
+    "isometric_view_style": {
+      "label": {
+        "cn": "轴测视角风格",
+        "en": "Isometric View Style"
+      },
+      "category": "visual",
+      "options": [
+        {
+          "cn": "标准轴测视角",
+          "en": "Standard isometric view"
+        },
+        {
+          "cn": "低角度轴测",
+          "en": "Low-angle isometric"
+        },
+        {
+          "cn": "高角度俯视",
+          "en": "High-angle overlook"
+        },
+        {
+          "cn": "远景轴测",
+          "en": "Distant isometric view"
+        },
+        {
+          "cn": "近景特写",
+          "en": "Close-up isometric"
+        },
+        {
+          "cn": "动态斜视角",
+          "en": "Dynamic oblique angle"
+        },
+        {
+          "cn": "建筑剖面视角",
+          "en": "Architectural section view"
+        },
+        {
+          "cn": "鸟瞰全景",
+          "en": "Bird's eye panoramic"
+        }
+      ]
+    },
+    "local_pattern": {
+      "label": {
+        "cn": "当地特色纹样",
+        "en": "Local Cultural Pattern"
+      },
+      "category": "visual",
+      "options": [
+        {
+          "cn": "意式几何纹样",
+          "en": "Italian geometric patterns"
+        },
+        {
+          "cn": "哥特式装饰纹样",
+          "en": "Gothic ornamental patterns"
+        },
+        {
+          "cn": "巴洛克卷草纹",
+          "en": "Baroque scrollwork"
+        },
+        {
+          "cn": "传统回纹图案",
+          "en": "Traditional Greek key patterns"
+        },
+        {
+          "cn": "波斯地毯纹样",
+          "en": "Persian carpet patterns"
+        },
+        {
+          "cn": "日本和风纹样",
+          "en": "Japanese wave patterns"
+        },
+        {
+          "cn": "中国祥云纹样",
+          "en": "Chinese cloud patterns"
+        },
+        {
+          "cn": "北欧极简纹样",
+          "en": "Nordic minimalist patterns"
+        },
+        {
+          "cn": "法式花卉纹样",
+          "en": "French floral patterns"
+        },
+        {
+          "cn": "摩尔式几何纹样",
+          "en": "Moorish geometric patterns"
+        }
+      ]
+    },
+    "ui_texture_style": {
+      "label": {
+        "cn": "UI质感风格",
+        "en": "UI Texture Style"
+      },
+      "category": "visual",
+      "options": [
+        {
+          "cn": "毛玻璃拟物质感",
+          "en": "Frosted glass skeuomorphic texture"
+        },
+        {
+          "cn": "磨砂半透明质感",
+          "en": "Matte translucent texture"
+        },
+        {
+          "cn": "水晶折射质感",
+          "en": "Crystal refraction texture"
+        },
+        {
+          "cn": "磨砂玻璃质感",
+          "en": "Frosted glass texture"
+        },
+        {
+          "cn": "亚克力质感",
+          "en": "Acrylic texture"
+        },
+        {
+          "cn": "光滑塑料质感",
+          "en": "Smooth plastic texture"
+        },
+        {
+          "cn": "陶瓷质感",
+          "en": "Ceramic texture"
+        },
+        {
+          "cn": "丝绸质感",
+          "en": "Silk texture"
+        }
+      ]
+    },
+    "city_name_extended": {
+      "label": {
+        "cn": "世界城市",
+        "en": "World Cities"
+      },
+      "category": "location",
+      "options": [
+        {
+          "cn": "米兰",
+          "en": "Milan"
+        },
+        {
+          "cn": "巴黎",
+          "en": "Paris"
+        },
+        {
+          "cn": "伦敦",
+          "en": "London"
+        },
+        {
+          "cn": "纽约",
+          "en": "New York"
+        },
+        {
+          "cn": "东京",
+          "en": "Tokyo"
+        },
+        {
+          "cn": "京都",
+          "en": "Kyoto"
+        },
+        {
+          "cn": "巴塞罗那",
+          "en": "Barcelona"
+        },
+        {
+          "cn": "迪拜",
+          "en": "Dubai"
+        },
+        {
+          "cn": "新加坡",
+          "en": "Singapore"
+        },
+        {
+          "cn": "上海",
+          "en": "Shanghai"
+        },
+        {
+          "cn": "北京",
+          "en": "Beijing"
+        },
+        {
+          "cn": "香港",
+          "en": "Hong Kong"
+        },
+        {
+          "cn": "首尔",
+          "en": "Seoul"
+        },
+        {
+          "cn": "柏林",
+          "en": "Berlin"
+        },
+        {
+          "cn": "阿姆斯特丹",
+          "en": "Amsterdam"
+        },
+        {
+          "cn": "布拉格",
+          "en": "Prague"
+        }
+      ]
+    },
+    "brand_fast_food": {
+      "label": {
+        "cn": "快餐品牌",
+        "en": "Fast Food Brand"
+      },
+      "category": "other",
+      "options": [
+        {
+          "cn": "麦当劳",
+          "en": "McDonald's"
+        },
+        {
+          "cn": "肯德基",
+          "en": "KFC"
+        },
+        {
+          "cn": "汉堡王",
+          "en": "Burger King"
+        },
+        {
+          "cn": "星巴克",
+          "en": "Starbucks"
+        },
+        {
+          "cn": "赛百味",
+          "en": "Subway"
+        },
+        {
+          "cn": "必胜客",
+          "en": "Pizza Hut"
+        },
+        {
+          "cn": "达美乐",
+          "en": "Domino's"
+        },
+        {
+          "cn": "塔可钟",
+          "en": "Taco Bell"
+        },
+        {
+          "cn": "温蒂汉堡",
+          "en": "Wendy's"
+        },
+        {
+          "cn": " Dunkin' Donuts",
+          "en": "Dunkin' Donuts"
+        }
+      ]
+    },
+    "ad_scene_environment": {
+      "label": {
+        "cn": "广告场景环境",
+        "en": "Advertisement Scene Environment"
+      },
+      "category": "location",
+      "options": [
+        {
+          "cn": "现代餐厅厨房",
+          "en": "Modern restaurant kitchen"
+        },
+        {
+          "cn": "时尚咖啡厅",
+          "en": "Trendy coffee shop"
+        },
+        {
+          "cn": "工业风烘焙坊",
+          "en": "Industrial bakery"
+        },
+        {
+          "cn": "豪华酒店餐厅",
+          "en": "Luxury hotel restaurant"
+        },
+        {
+          "cn": "温馨家庭厨房",
+          "en": "Cozy home kitchen"
+        },
+        {
+          "cn": "开放式厨房空间",
+          "en": "Open kitchen space"
+        },
+        {
+          "cn": "快餐店后厨",
+          "en": "Fast food kitchen"
+        },
+        {
+          "cn": "甜品工坊",
+          "en": "Dessert workshop"
+        }
+      ]
+    },
+    "vehicle_type": {
+      "label": {
+        "cn": "载具类型",
+        "en": "Vehicle Type"
+      },
+      "category": "item",
+      "options": [
+        {
+          "cn": "超级跑车",
+          "en": "Super Car"
+        },
+        {
+          "cn": "运动摩托车",
+          "en": "Sport Motorcycle"
+        },
+        {
+          "cn": "重型卡车",
+          "en": "Heavy Truck"
+        },
+        {
+          "cn": "战斗机",
+          "en": "Fighter Jet"
+        },
+        {
+          "cn": "直升机",
+          "en": "Helicopter"
+        },
+        {
+          "cn": "装甲车",
+          "en": "Armored Vehicle"
+        },
+        {
+          "cn": "越野车",
+          "en": "Off-road Vehicle"
+        },
+        {
+          "cn": "工程机甲",
+          "en": "Construction Mecha"
+        }
+      ]
+    },
+    "vehicle_color": {
+      "label": {
+        "cn": "载具颜色",
+        "en": "Vehicle Color"
+      },
+      "category": "visual",
+      "options": [
+        {
+          "cn": "深灰色",
+          "en": "Dark Gray"
+        },
+        {
+          "cn": "亮红色",
+          "en": "Bright Red"
+        },
+        {
+          "cn": "纯白色",
+          "en": "Pure White"
+        },
+        {
+          "cn": "午夜蓝",
+          "en": "Midnight Blue"
+        },
+        {
+          "cn": "碳素黑",
+          "en": "Carbon Black"
+        },
+        {
+          "cn": "金色",
+          "en": "Gold"
+        },
+        {
+          "cn": "银色",
+          "en": "Silver"
+        },
+        {
+          "cn": "军绿色",
+          "en": "Military Green"
+        }
+      ]
+    },
+    "vehicle_brand": {
+      "label": {
+        "cn": "载具品牌",
+        "en": "Vehicle Brand"
+      },
+      "category": "item",
+      "options": [
+        {
+          "cn": "科幻超级跑车",
+          "en": "Sci-fi Super Car"
+        },
+        {
+          "cn": "杜卡迪（Ducati）",
+          "en": "Ducati"
+        },
+        {
+          "cn": "兰博基尼 Aventador",
+          "en": "Lamborghini Aventador"
+        },
+        {
+          "cn": "法拉利",
+          "en": "Ferrari"
+        },
+        {
+          "cn": "保时捷 911",
+          "en": "Porsche 911"
+        },
+        {
+          "cn": "雪佛兰科尔维特",
+          "en": "Chevrolet Corvette"
+        },
+        {
+          "cn": "福特野马",
+          "en": "Ford Mustang"
+        },
+        {
+          "cn": "本田 CB1000R",
+          "en": "Honda CB1000R"
+        }
+      ]
+    },
+    "robot_color_scheme": {
+      "label": {
+        "cn": "机器人配色",
+        "en": "Robot Color Scheme"
+      },
+      "category": "visual",
+      "options": [
+        {
+          "cn": "深灰色类人机械机器人",
+          "en": "Dark Gray Humanoid Mech Robot"
+        },
+        {
+          "cn": "红黑相间敏捷型机器人",
+          "en": "Red-Black Agile Robot"
+        },
+        {
+          "cn": "干练的银白色机器人",
+          "en": "Sleek Silver-White Robot"
+        },
+        {
+          "cn": "蓝金配色重型机器人",
+          "en": "Blue-Gold Heavy Robot"
+        },
+        {
+          "cn": "碳素黑战术机器人",
+          "en": "Carbon Black Tactical Robot"
+        },
+        {
+          "cn": "白色装甲机器人",
+          "en": "White Armored Robot"
+        },
+        {
+          "cn": "军绿迷彩机器人",
+          "en": "Military Camo Robot"
+        },
+        {
+          "cn": "铬合金反光机器人",
+          "en": "Chrome Reflective Robot"
+        }
+      ]
+    },
+    "transform_location": {
+      "label": {
+        "cn": "变形场景",
+        "en": "Transform Location"
+      },
+      "category": "location",
+      "options": [
+        {
+          "cn": "城市高速公路，背景有高楼大厦和其他车辆",
+          "en": "City highway with skyscrapers and other vehicles"
+        },
+        {
+          "cn": "霓虹闪烁的城市夜晚街道，地面有霓虹灯倒影",
+          "en": "Neon-lit city street at night with reflections"
+        },
+        {
+          "cn": "日间的城市大桥，远景是密集的写字楼",
+          "en": "City bridge by day with office towers"
+        },
+        {
+          "cn": "工业区废弃工厂，锈迹斑斑",
+          "en": "Abandoned industrial factory, rusty"
+        },
+        {
+          "cn": "沙漠公路，尘土飞扬",
+          "en": "Desert highway, dusty"
+        },
+        {
+          "cn": "未来都市飞行车道",
+          "en": "Futuristic city flying lanes"
+        },
+        {
+          "cn": "山区蜿蜒公路",
+          "en": "Mountain winding road"
+        },
+        {
+          "cn": "雨夜城市隧道",
+          "en": "Rainy city tunnel"
+        }
+      ]
+    },
+    "transform_camera": {
+      "label": {
+        "cn": "变形镜头",
+        "en": "Transform Camera"
+      },
+      "category": "visual",
+      "options": [
+        {
+          "cn": "低角度跟随镜头（Tracking Shot），在变形时镜头向上摇拍（Tilt Up）",
+          "en": "Low angle Tracking Shot, Tilt Up during transformation"
+        },
+        {
+          "cn": "动态追踪镜头，特写车轮旋转，随后拉远展示全身变形",
+          "en": "Dynamic tracking, wheel close-up then pull back to full body"
+        },
+        {
+          "cn": "广角低角度镜头，强调速度感和变形的力量感",
+          "en": "Wide low angle emphasizing speed and power"
+        },
+        {
+          "cn": "环绕拍摄镜头，从各个角度展示变形过程",
+          "en": "Orbit shot showing transformation from all angles"
+        },
+        {
+          "cn": "手持跟拍镜头，紧张真实感",
+          "en": "Handheld follow shot, tense realism"
+        },
+        {
+          "cn": "推镜头（Push In）+ 慢动作特写",
+          "en": "Push In + Slow motion close-up"
+        },
+        {
+          "cn": "上帝视角俯拍（Bird's Eye）",
+          "en": "Bird's Eye overhead shot"
+        },
+        {
+          "cn": "多镜头快速剪辑（Quick Cut）",
+          "en": "Multi-angle quick cut"
+        }
+      ]
+    },
+    "transform_style": {
+      "label": {
+        "cn": "变形风格",
+        "en": "Transform Style"
+      },
+      "category": "visual",
+      "options": [
+        {
+          "cn": "超写实CGI，好莱坞动作电影质感，精密的机械零件构造，金属质感，电影级光效",
+          "en": "Hyper-realistic CGI, Hollywood action movie quality, intricate mechanical parts, metallic texture, cinematic lighting"
+        },
+        {
+          "cn": "赛博朋克美学，电影写实主义，高饱和度色彩，镜头光晕",
+          "en": "Cyberpunk aesthetics, cinematic realism, high saturation colors, lens flare"
+        },
+        {
+          "cn": "清晰商业广告片质感，细腻的机械动画，高分辨率纹理",
+          "en": "Clean commercial quality,细腻 mechanical animation, high-resolution textures"
+        },
+        {
+          "cn": "日式机甲动画风格，夸张变形效果",
+          "en": "Japanese mecha anime style, exaggerated transformation"
+        },
+        {
+          "cn": "工业科幻风格，厚重机械感",
+          "en": "Industrial sci-fi style, heavy mechanical feel"
+        },
+        {
+          "cn": "拟真变形，复杂零件移位",
+          "en": "Realistic transformation, complex parts shifting"
+        },
+        {
+          "cn": "流畅变形动画，无缝过渡",
+          "en": "Fluid transformation animation, seamless transition"
+        },
+        {
+          "cn": "暗黑写实风格，战争损毁质感",
+          "en": "Dark realistic style, battle-damaged texture"
+        }
+      ]
     }
   },
   "defaults": {
@@ -6433,6 +7067,62 @@
     "dynamic_tracking_shot": {
       "cn": "第三人称紧密跟拍（Third-Person Tight Tracking）",
       "en": "Third-Person Tight Tracking"
+    },
+    "weather_condition": {
+      "cn": "晴朗",
+      "en": "Sunny"
+    },
+    "isometric_view_style": {
+      "cn": "标准轴测视角",
+      "en": "Standard isometric view"
+    },
+    "local_pattern": {
+      "cn": "意式几何纹样",
+      "en": "Italian geometric patterns"
+    },
+    "ui_texture_style": {
+      "cn": "毛玻璃拟物质感",
+      "en": "Frosted glass skeuomorphic texture"
+    },
+    "city_name_extended": {
+      "cn": "米兰",
+      "en": "Milan"
+    },
+    "brand_fast_food": {
+      "cn": "麦当劳",
+      "en": "McDonald's"
+    },
+    "ad_scene_environment": {
+      "cn": "现代餐厅厨房",
+      "en": "Modern restaurant kitchen"
+    },
+    "vehicle_type": {
+      "cn": "超级跑车",
+      "en": "Super Car"
+    },
+    "vehicle_color": {
+      "cn": "深灰色",
+      "en": "Dark Gray"
+    },
+    "vehicle_brand": {
+      "cn": "科幻超级跑车",
+      "en": "Sci-fi Super Car"
+    },
+    "robot_color_scheme": {
+      "cn": "深灰色类人机械机器人",
+      "en": "Dark Gray Humanoid Mech Robot"
+    },
+    "transform_location": {
+      "cn": "城市高速公路，背景有高楼大厦和其他车辆",
+      "en": "City highway with skyscrapers and other vehicles"
+    },
+    "transform_camera": {
+      "cn": "低角度跟随镜头（Tracking Shot），在变形时镜头向上摇拍（Tilt Up）",
+      "en": "Low angle Tracking Shot, Tilt Up during transformation"
+    },
+    "transform_style": {
+      "cn": "超写实CGI，好莱坞动作电影质感，精密的机械零件构造，金属质感，电影级光效",
+      "en": "Hyper-realistic CGI, Hollywood action movie quality, intricate mechanical parts, metallic texture, cinematic lighting"
     }
   },
   "categories": {

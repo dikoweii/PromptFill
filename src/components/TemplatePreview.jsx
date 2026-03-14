@@ -115,17 +115,15 @@ export const TemplatePreview = React.memo(({
 
   // 统一的底层容器样式
   const unifiedStyle = isDarkMode ? {
-    background: 'linear-gradient(180deg, #3B3B3B 0%, #242120 100%)',
-    borderRadius: '16px',
+    borderRadius: '24px',
     border: '1px solid transparent',
-    backgroundImage: 'linear-gradient(180deg, #3B3B3B, #242120), linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%)',
+    backgroundImage: 'linear-gradient(180deg, #3B3B3B 0%, #242120 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%)',
     backgroundOrigin: 'border-box',
     backgroundClip: 'padding-box, border-box',
   } : {
-    background: 'linear-gradient(180deg, #FAF5F1 0%, #F6EBE6 100%)',
-    borderRadius: '16px',
+    borderRadius: '24px',
     border: '1px solid transparent',
-    backgroundImage: 'linear-gradient(180deg, #FAF5F1, #F6EBE6), linear-gradient(180deg, #FFFFFF 0%, rgba(255, 255, 255, 0) 100%)',
+    backgroundImage: 'linear-gradient(180deg, #FAF5F1 0%, #F6EBE6 100%), linear-gradient(180deg, #FFFFFF 0%, rgba(255, 255, 255, 0) 100%)',
     backgroundOrigin: 'border-box',
     backgroundClip: 'padding-box, border-box',
   };
@@ -504,8 +502,8 @@ export const TemplatePreview = React.memo(({
                           {getLocalized(activeTemplate.name, language) || "Untitled Template"}
                         </h2>
                         {activeTemplate.author && (
-                          <div className="mb-1.5 opacity-70">
-                            <span className="text-sm font-bold tracking-wide text-white/90">
+                          <div className="mb-1.5 opacity-90">
+                            <span className={`text-sm font-bold tracking-wide ${AUTHOR_COLOR}`}>
                               {activeTemplate.author === '官方' ? t('official') : activeTemplate.author}
                             </span>
                           </div>
@@ -665,7 +663,7 @@ export const TemplatePreview = React.memo(({
                             </div>
                         ) : (
                             <div className="flex items-center gap-3 mb-3 group/title-edit">
-                                <h2 className={`text-3xl md:text-4xl font-bold tracking-tight leading-tight ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                                <h2 className={`text-3xl md:text-4xl font-black tracking-tight leading-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                     {getLocalized(activeTemplate.name, language)}
                                 </h2>
                                 <button
@@ -698,7 +696,7 @@ export const TemplatePreview = React.memo(({
                             <div className="flex flex-wrap gap-x-6 gap-y-2 mb-6 mt-1">
                                 {/* Author */}
                                 <div className="flex items-center gap-2">
-                                    <span className={`uppercase tracking-widest text-[10px] font-black opacity-40 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    <span className={`uppercase tracking-widest text-[10px] font-black opacity-60 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                         {language === 'cn' ? '作者' : 'Author'}:
                                     </span>
                                     <span className={`text-xs font-black ${AUTHOR_COLOR}`}>

@@ -40,8 +40,9 @@ const MobileBottomNav = ({
     setIsTemplatesDrawerOpen(false);
     setIsBanksDrawerOpen(false);
     if (templates.length > 0 && !activeTemplateId) {
-      const firstId = templates[0].id;
-      setActiveTemplateId(firstId);
+      // 选择最新的模板（数组末尾）
+      const newestId = templates[templates.length - 1].id;
+      setActiveTemplateId(newestId);
     }
     setMobileTab('editor');
   };

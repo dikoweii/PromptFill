@@ -162,7 +162,7 @@ export const VisualEditor = React.forwardRef(({
         value={value}
         onChange={onChange}
         onScroll={handleScroll}
-        className={`absolute inset-0 w-full h-full p-8 font-mono text-sm leading-relaxed whitespace-pre-wrap break-words bg-transparent text-transparent resize-none focus:outline-none overflow-auto custom-scrollbar z-10 m-0 selection:bg-orange-500/30 ${isDarkMode ? 'caret-white selection:text-white' : 'caret-gray-800 selection:bg-orange-200 selection:text-orange-900'}`}
+        className={`absolute inset-0 w-full h-full p-8 font-mono text-sm leading-relaxed whitespace-pre-wrap break-words bg-transparent text-transparent resize-none focus:outline-none overflow-y-auto z-10 m-0 selection:bg-orange-500/30 ${isDarkMode ? 'caret-white selection:text-white' : 'caret-gray-800 selection:bg-orange-200 selection:text-orange-900'}`}
         style={{ fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }}
         spellCheck={false}
       />

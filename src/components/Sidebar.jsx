@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React from 'react';
+
+const VIDEO_FEATURE_ENABLED = import.meta.env.VITE_VIDEO_ENABLED === 'true';
+import { Link, useLocation } from 'react-router-dom';
 import { AppStoreIcon } from './icons/AppStoreIcon';
+import { FlaskIcon } from './icons/FlaskIcon';
 import { GithubIcon } from './icons/GithubIcon';
 import { HomeIcon } from './icons/HomeIcon';
 import { ListIcon } from './icons/ListIcon';
+import { VideoIcon } from './icons/VideoIcon';
 import { OrderIcon } from './icons/OrderIcon';
 import { RefreshIcon } from './icons/RefreshIcon';
 import { TranslateIcon } from './icons/TranslateIcon';
@@ -40,42 +44,46 @@ export const Sidebar = ({
   setThemeMode,
   t
 }) => {
+  const location = useLocation();
   // const [isSponsorModalOpen, setIsSponsorModalOpen] = useState(false);
   // 统一的容器样式
+  // TODO: 渐变填充和描边暂时设为透明，保留结构以便后续调整
   const containerStyle = isDarkMode ? {
     width: '62px',
     height: '100%',
     borderRadius: '16px',
     border: '1px solid transparent',
-    backgroundImage: 'linear-gradient(180deg, #3B3B3B 0%, #242120 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%)',
-    backgroundOrigin: 'border-box',
-    backgroundClip: 'padding-box, border-box',
+    background: 'transparent',
+    // 原渐变样式 (暂时禁用)
+    // backgroundImage: 'linear-gradient(180deg, #3B3B3B 0%, #242120 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%)',
+    // backgroundOrigin: 'border-box',
+    // backgroundClip: 'padding-box, border-box',
   } : {
     width: '62px',
     height: '100%',
     borderRadius: '16px',
-    // 使用渐变背景 + 渐变描边技巧 (解决 border-radius 与 border-image 冲突)
     border: '1px solid transparent',
-    backgroundImage: 'linear-gradient(180deg, #FAF5F1 0%, #F6EBE6 100%), linear-gradient(180deg, #FFFFFF 0%, rgba(255, 255, 255, 0) 100%)',
-    backgroundOrigin: 'border-box',
-    backgroundClip: 'padding-box, border-box',
+    background: 'transparent',
+    // 原渐变样式 (暂时禁用) - 使用渐变背景 + 渐变描边技巧 (解决 border-radius 与 border-image 冲突)
+    // backgroundImage: 'linear-gradient(180deg, #FAF5F1 0%, #F6EBE6 100%), linear-gradient(180deg, #FFFFFF 0%, rgba(255, 255, 255, 0) 100%)',
+    // backgroundOrigin: 'border-box',
+    // backgroundClip: 'padding-box, border-box',
   };
 
   return (
     <aside 
       style={containerStyle}
-      className="relative flex flex-col justify-between items-center py-8 mr-4 flex-shrink-0"
+      className="relative flex flex-col justify-between items-center py-1 mr-4 flex-shrink-0"
     >
-      
       {/* 上部分：Logo + 导航按钮 */}
-      <div className="flex flex-col items-center gap-8 w-full">
+      <div className="flex flex-col items-center gap-5 w-full">
         {/* Logo */}
-        <div className="mt-4 mb-2">
+        <div>
           <img src="/Logo_icon.svg" alt="提示词填空器 (Prompt Fill) - AI 提示词管理工具" className="w-9 h-9" />
         </div>
 
         {/* 导航按钮组 */}
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-4">
           <Tooltip content="主页" isDarkMode={isDarkMode}>
             {activeTab === 'settings' ? (
               <Link
@@ -111,6 +119,28 @@ export const Sidebar = ({
               </button>
             )}
           </Tooltip>
+
+          {VIDEO_FEATURE_ENABLED && (
+            <Tooltip content="视频编辑" isDarkMode={isDarkMode}>
+              <Link
+                to="/video"
+                className={`p-2 group transition-colors block ${location?.pathname?.startsWith('/video') ? (isDarkMode ? 'text-[#FB923C]' : 'text-[#EA580C]') : (isDarkMode ? 'text-[#8E9196]' : 'text-[#6B7280]')} hover:text-[#F97316]`}
+              >
+                <VideoIcon size={24} />
+              </Link>
+            </Tooltip>
+          )}
+
+          {import.meta.env.DEV && (
+            <Tooltip content="UI Test" isDarkMode={isDarkMode}>
+              <Link
+                to="/ui-test"
+                className={`p-2 group transition-colors block ${location?.pathname === '/ui-test' ? (isDarkMode ? 'text-[#FB923C]' : 'text-[#EA580C]') : (isDarkMode ? 'text-[#8E9196]' : 'text-[#6B7280]')} hover:text-[#F97316]`}
+              >
+                <FlaskIcon size={24} />
+              </Link>
+            </Tooltip>
+          )}
           
           <div className="relative">
             <Tooltip content={t('sort')} isDarkMode={isDarkMode}>
@@ -159,7 +189,7 @@ export const Sidebar = ({
       </div>
 
       {/* 下部分：设置组 */}
-      <div className="flex flex-col items-center gap-6 w-full">
+      <div className="flex flex-col items-center gap-4 w-full">
         <Tooltip content={t('language')} isDarkMode={isDarkMode}>
           <button 
             onClick={() => setLanguage(language === 'cn' ? 'en' : 'cn')}

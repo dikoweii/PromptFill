@@ -161,7 +161,7 @@ export const CategoryManagerModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300"
+      className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div

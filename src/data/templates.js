@@ -2097,6 +2097,11 @@ The sequence culminates as the jet bursts above the waterfall, revealing a breat
  * 4. imageUrl 可以是外部链接，也可以是项目内的 import 资源
  * 5. tags 可以从 TEMPLATE_TAGS 中选择
  */
+export const TEMPLATE_IMPORTED_MMQC6OK1 = {
+  cn: `一张照片，展示极度拥挤的{{location}}车厢内部，人们站着排成一排的全身照。一只巨大的、可爱的{{character_type}}，正看着镜头，乘坐着穿过{{city_name}}城市交通的地铁。`,
+  en: `A photo showing an extremely crowded {{location}} carriage interior with people standing in a row for a full-body shot. A huge, cute {{character_type}} is looking at the camera, riding the subway through {{city_name}} city traffic.`
+};
+
 export const INITIAL_TEMPLATES_CONFIG = [
   {
     id: "tpl_photo_grid",
@@ -2991,6 +2996,45 @@ export const INITIAL_TEMPLATES_CONFIG = [
     tags: ["动作", "影视", "自然"],
     language: ["cn", "en"],
     bestModel: "Seedance 2.0",
+    baseImage: "no_base_image"
+  }
+,
+  {
+    id: "tpl_imported_mmqc6ok1_地铁玩偶装扮",
+    name: { cn: "地铁玩偶装扮", en: "Subway Rabbit Costume" },
+    content: TEMPLATE_IMPORTED_MMQC6OK1,
+    imageUrl: "https://s3.bmp.ovh/2026/03/14/8OzmfHGv.jpg",
+    author: "@tanshilong",
+    selections: {
+      character_type: {
+        cn: "粉色羊毛兔子装扮",
+        en: "Pink wool rabbit costume"
+      },
+      material: {
+        cn: "羊毛",
+        en: "wool"
+      },
+      accessory: {
+        cn: "粉色花朵发夹",
+        en: "pink flower hair clip"
+      },
+      city_name: {
+        cn: "东京",
+        en: "Tokyo"
+      },
+      "character_type-0": {
+        cn: "黄色小鸡装扮",
+        en: "yellow chick costume"
+      },
+      "city_name-0": "名古屋站前",
+      location: {
+        cn: "日本地铁",
+        en: "Japanese subway"
+      }
+    },
+    tags: ["人物","摄影","现代","游戏"],
+    language: ["cn","en"],
+    bestModel: "Nano Banana Pro",
     baseImage: "no_base_image"
   }
 ];

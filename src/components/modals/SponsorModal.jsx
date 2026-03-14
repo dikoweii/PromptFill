@@ -43,7 +43,7 @@ const SponsorModal = ({ isOpen, onClose, isDarkMode, language }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300"
+      className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-md flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
@@ -62,7 +62,7 @@ const SponsorModal = ({ isOpen, onClose, isDarkMode, language }) => {
           {/* 标题区域 */}
           <div className="text-center mb-6">
             <img
-              src="/LemonJuice.png"
+              src="/images/LemonJuice.png"
               alt="Lemon Juice"
               className="w-40 h-40 object-contain mx-auto mb-4 transition-transform duration-300 ease-in-out hover:scale-110 hover:rotate-6 cursor-pointer"
             />

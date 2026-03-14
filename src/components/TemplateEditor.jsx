@@ -7,6 +7,7 @@ import { VisualEditor } from './VisualEditor';
 import { EditorToolbar } from './EditorToolbar';
 import { PremiumButton } from './PremiumButton';
 import { LinkTemplateModal } from './modals/LinkTemplateModal';
+import { ScanningAnimation } from './ScanningAnimation';
 
 /**
  * HScrollArea — 支持鼠标滚轮横向滑动 + 左右翻页按钮
@@ -173,7 +174,13 @@ export const TemplateEditor = React.memo(({
   // AI 相关（预留接口）
   onGenerateAITerms = null,  // AI 生成词条的回调函数
   onSmartSplitClick = null,  // 智能拆分的回调函数
+  onDebugSplitRun = null,    // 调试模式：前端直调GLM
+  getDebugSystemPrompt = null, // 调试模式：获取默认系统提示词
+  getDebugSystemPromptLite = null, // 调试模式：获取轻量模式系统提示词
   isSmartSplitLoading = false, // 智能拆分加载状态
+  splitSnapshot = null,      // 拆分快照（有值时显示重置按钮）
+  onResetClick = null,       // 点击「重置」按钮（打开对比弹窗）
+  splitDurationMs = null,    // 上次拆分耗时（毫秒）
   updateTemplateProperty, // 新增：立即更新属性的函数
   setIsTemplatesDrawerOpen,
   setIsBanksDrawerOpen,
@@ -209,13 +216,13 @@ export const TemplateEditor = React.memo(({
 
   // 统一的容器样式
   const containerStyle = !isMobileDevice ? (isDarkMode ? {
-    borderRadius: '16px',
+    borderRadius: '24px',
     border: '1px solid transparent',
     backgroundImage: 'linear-gradient(180deg, #3B3B3B 0%, #242120 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%)',
     backgroundOrigin: 'border-box',
     backgroundClip: 'padding-box, border-box',
   } : {
-    borderRadius: '16px',
+    borderRadius: '24px',
     border: '1px solid transparent',
     backgroundImage: 'linear-gradient(180deg, #FAF5F1 0%, #F6EBE6 100%), linear-gradient(180deg, #FFFFFF 0%, rgba(255, 255, 255, 0) 100%)',
     backgroundOrigin: 'border-box',
@@ -314,7 +321,7 @@ export const TemplateEditor = React.memo(({
         ${(mobileTab === 'editor') ? 'flex fixed inset-0 z-30 md:static md:bg-transparent' : 'hidden'}
         ${(mobileTab === 'editor') && isMobileDevice ? (isDarkMode ? 'bg-[#2A2928]' : 'bg-white') : ''}
         md:flex flex-1 shrink-[1] md:min-w-[400px] flex-col h-full overflow-hidden relative
-        md:rounded-2xl origin-left
+        md:rounded-3xl origin-left
       `}
     >
       <div 
@@ -324,9 +331,9 @@ export const TemplateEditor = React.memo(({
 
         {/* ===== 顶部工具栏 ===== */}
         {(!isMobileDevice || mobileTab !== 'settings') && (
-          <div className={`px-4 md:px-8 py-3 md:py-4 border-b flex flex-col gap-4 z-30 h-auto flex-shrink-0 pt-safe ${isDarkMode ? 'border-white/5' : 'border-gray-100/50'}`}>
-            {/* 第一行：模版开关、标题、词库开关 (Mobile) / 标题、语言 (Desktop) */}
-            <div className="w-full flex items-center justify-between gap-2 shrink-0">
+          <div className="px-6 pb-4 z-30 h-auto flex-shrink-0" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
+            {/* 第一行：模版开关、标题、词库开关 (Mobile) / 标题、语言 (Desktop)，标题行高度与其他面板一致 */}
+            <div className="w-full flex items-center justify-between gap-2 shrink-0 min-h-10 mb-[14px]">
               {isMobileDevice && (
                 <button 
                   onClick={() => setIsTemplatesDrawerOpen(true)}
@@ -337,8 +344,8 @@ export const TemplateEditor = React.memo(({
               )}
 
               <div className="flex-1 flex items-center justify-center md:justify-start gap-3 overflow-hidden">
-                <h1 className={`text-base md:text-2xl font-black truncate tracking-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                  {getLocalized(activeTemplate?.name, language)}
+                <h1 className={`text-[20px] font-bold tracking-tight flex items-baseline gap-2 ${isDarkMode ? 'text-[#CDCDCD]' : 'text-[#5D5D5D]'}`}>
+                  {language === 'cn' ? '模版详情' : 'Template Detail'}
                 </h1>
                 
                 {/* 语言切换 - 桌面端显示在标题旁 */}
@@ -371,7 +378,7 @@ export const TemplateEditor = React.memo(({
             </div>
 
             {/* 第二行：模式切换 (左侧)、操作按钮 (右侧) */}
-            <div className="w-full flex items-center justify-between gap-1.5 md:gap-3 shrink-0">
+            <div className="w-full flex items-center justify-between gap-1.5 md:gap-3 shrink-0 h-[42px]">
               {/* 模式切换 (预览/编辑) */}
               <div className={`premium-toggle-container ${isDarkMode ? 'dark' : 'light'} shrink-0 scale-90 md:scale-100 origin-left`}>
                 <button
@@ -448,7 +455,13 @@ export const TemplateEditor = React.memo(({
                   <EditorToolbar
                     onInsertClick={() => setIsInsertModalOpen(true)}
                     onSmartSplitClick={onSmartSplitClick}
+                    onDebugSplitRun={onDebugSplitRun}
+                    getDebugSystemPrompt={getDebugSystemPrompt}
+                    getDebugSystemPromptLite={getDebugSystemPromptLite}
                     isSmartSplitLoading={isSmartSplitLoading}
+                    hasSplitSnapshot={!!splitSnapshot}
+                    splitDurationMs={splitSnapshot?.splitDurationMs ?? null}
+                    onResetClick={onResetClick}
                     canUndo={historyPast.length > 0}
                     canRedo={historyFuture.length > 0}
                     onUndo={handleUndo}
@@ -495,7 +508,7 @@ export const TemplateEditor = React.memo(({
                     </span>
                   </button>
                   {mobileAccordion === 'info' && (
-                    <div className={`px-4 pb-4 pt-1 flex flex-col gap-2 ${isDarkMode ? 'bg-white/[0.02]' : 'bg-gray-50/50'}`}>
+                    <div className={`px-4 pb-4 pt-4 flex flex-col gap-2 ${isDarkMode ? 'bg-white/[0.02]' : 'bg-gray-50/50'}`}>
                       <div className="flex flex-col gap-0.5">
                         <label className={`text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{language === 'cn' ? '标题' : 'Title'}</label>
                         <input type="text" value={tempTemplateName} onChange={(e) => setTempTemplateName(e.target.value)} onBlur={saveTemplateName}
@@ -577,7 +590,7 @@ export const TemplateEditor = React.memo(({
                     </span>
                   </button>
                   {mobileAccordion === 'preview' && (
-                    <div className={`px-4 pb-4 pt-1 ${isDarkMode ? 'bg-white/[0.02]' : 'bg-gray-50/50'}`}>
+                    <div className={`px-4 pb-4 pt-4 ${isDarkMode ? 'bg-white/[0.02]' : 'bg-gray-50/50'}`}>
                       <HScrollArea isDarkMode={isDarkMode}>
                         {activeTemplate.type === 'video' ? (
                           <>
@@ -693,7 +706,7 @@ export const TemplateEditor = React.memo(({
                     </span>
                   </button>
                   {mobileAccordion === 'source' && (
-                    <div className={`px-4 pb-4 pt-1 ${isDarkMode ? 'bg-white/[0.02]' : 'bg-gray-50/50'}`}>
+                    <div className={`px-4 pb-4 pt-4 ${isDarkMode ? 'bg-white/[0.02]' : 'bg-gray-50/50'}`}>
                       {renderSourceAssets()}
                     </div>
                   )}
@@ -736,14 +749,6 @@ export const TemplateEditor = React.memo(({
                           onInteraction={() => {}}
                         />
                       </div>
-                      {isSmartSplitLoading && (
-                        <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center pointer-events-none smart-split-loading-overlay">
-                          <div className={`flex flex-col items-center gap-3 p-6 rounded-3xl backdrop-blur-md ${isDarkMode ? 'bg-black/60' : 'bg-white/80 shadow-2xl'}`}>
-                            <div className="w-10 h-10 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin" />
-                            <span className={`text-sm font-black tracking-widest ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{language === 'cn' ? '正在智能分析...' : 'Analyzing...'}</span>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
@@ -756,7 +761,13 @@ export const TemplateEditor = React.memo(({
                   <EditorToolbar
                     onInsertClick={() => setIsInsertModalOpen(true)}
                     onSmartSplitClick={onSmartSplitClick}
+                    onDebugSplitRun={onDebugSplitRun}
+                    getDebugSystemPrompt={getDebugSystemPrompt}
+                    getDebugSystemPromptLite={getDebugSystemPromptLite}
                     isSmartSplitLoading={isSmartSplitLoading}
+                    hasSplitSnapshot={!!splitSnapshot}
+                    splitDurationMs={splitSnapshot?.splitDurationMs ?? null}
+                    onResetClick={onResetClick}
                     canUndo={historyPast.length > 0}
                     canRedo={historyFuture.length > 0}
                     onUndo={handleUndo}
@@ -789,7 +800,7 @@ export const TemplateEditor = React.memo(({
                     </span>
                   </button>
                   {desktopAccordion.has('info') && (
-                    <div className={`px-6 pb-4 pt-1 ${isDarkMode ? 'bg-white/[0.02]' : 'bg-gray-50/50'}`}>
+                    <div className={`px-6 pb-4 pt-4 ${isDarkMode ? 'bg-white/[0.02]' : 'bg-gray-50/50'}`}>
                       <div className="grid grid-cols-4 gap-3" ref={selectRef}>
                         <div className="flex flex-col gap-0.5">
                           <label className={`text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{language === 'cn' ? '标题' : 'Title'}</label>
@@ -869,7 +880,7 @@ export const TemplateEditor = React.memo(({
                     </span>
                   </button>
                   {desktopAccordion.has('preview') && (
-                    <div className={`px-6 pb-4 pt-1 ${isDarkMode ? 'bg-white/[0.02]' : 'bg-gray-50/50'}`}>
+                    <div className={`px-6 pb-4 pt-4 ${isDarkMode ? 'bg-white/[0.02]' : 'bg-gray-50/50'}`}>
                       <HScrollArea isDarkMode={isDarkMode}>
                         {activeTemplate.type === 'video' ? (
                           <>
@@ -983,7 +994,7 @@ export const TemplateEditor = React.memo(({
                     </span>
                   </button>
                   {desktopAccordion.has('source') && (
-                    <div className={`px-6 pb-4 pt-1 ${isDarkMode ? 'bg-white/[0.02]' : 'bg-gray-50/50'}`}>
+                    <div className={`px-6 pb-4 pt-4 ${isDarkMode ? 'bg-white/[0.02]' : 'bg-gray-50/50'}`}>
                       {renderSourceAssets()}
                     </div>
                   )}
@@ -1028,19 +1039,10 @@ export const TemplateEditor = React.memo(({
                           }}
                         />
                       </div>
-                      {isSmartSplitLoading && (
-                        <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center pointer-events-none smart-split-loading-overlay">
-                          <div className={`flex flex-col items-center gap-3 p-6 rounded-3xl backdrop-blur-md ${isDarkMode ? 'bg-black/60' : 'bg-white/80 shadow-2xl'}`}>
-                            <div className="w-10 h-10 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin" />
-                            <span className={`text-sm font-black tracking-widest ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{language === 'cn' ? '正在智能分析...' : 'Analyzing...'}</span>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
-              </div>
-              )
+              </div>              )
             ) : (
               /* 预览模式 */
               <div className="flex-1 relative overflow-hidden flex flex-col">
@@ -1117,28 +1119,18 @@ export const TemplateEditor = React.memo(({
                     setActiveTemplateId={setActiveTemplateId}
                   />
                 </div>
-
-                {/* Loading Indicator Popup (Independent of Mask) */}
-                {isSmartSplitLoading && (
-                  <div className="absolute inset-0 z-[60] flex flex-col items-center justify-center pointer-events-none smart-split-loading-overlay">
-                    <div className={`flex flex-col items-center gap-3 p-6 rounded-3xl backdrop-blur-md ${isDarkMode ? 'bg-black/60' : 'bg-white/80 shadow-2xl'}`}>
-                      <div className="w-10 h-10 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin" />
-                      <div className="flex flex-col items-center">
-                        <span className={`text-sm font-black tracking-widest ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {language === 'cn' ? '正在智能拆分...' : 'Splitting...'}
-                        </span>
-                        <span className={`text-[10px] font-bold ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} mt-1`}>
-                          {language === 'cn' ? '深度学习词库关联中' : 'Deep learning banks association'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* ===== 智能拆分全局加载弹窗 ===== */}
+      {isSmartSplitLoading && (
+        <div className="absolute inset-0 z-[70] flex flex-col items-center justify-center pointer-events-none smart-split-loading-overlay">
+          <ScanningAnimation isDarkMode={isDarkMode} language={language} />
+        </div>
+      )}
 
       {/* 关联模版选择弹窗 */}
       <LinkTemplateModal
@@ -1160,6 +1152,7 @@ export const TemplateEditor = React.memo(({
           updateTemplateProperty('source', nextSources);
         }}
       />
+
     </div>
   );
 });

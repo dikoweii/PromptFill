@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStickyState } from '../../../hooks';
 import { RightPanel } from '../RightPanel';
+import { ShotEditor } from '../ShotEditor';
 
 const RIGHT_PANEL_MIN = 260;
 const RIGHT_PANEL_MAX = 720;
@@ -76,16 +77,20 @@ export const VideoLayout = ({ isDarkMode }) => {
         </div>
       </div>
 
-      {/* 2. 中央编辑区容器 */}
-      <div style={getContainerStyle('auto', '1')} className="min-w-0 mx-2">
-        <div
-          className={`p-4 font-bold border-b ${isDarkMode ? 'border-white/5 text-white/70' : 'border-black/5 text-black/70'}`}
-        >
-          中央编辑区
-        </div>
-        <div className="flex-1 p-4 overflow-y-auto min-h-0">
-          {/* 这里稍后放 Timeline + ShotEditor */}
-        </div>
+      {/* 2. 中央编辑区容器（透明，无背景无边框） */}
+      <div
+        style={{
+          flex: 1,
+          height: '100%',
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          position: 'relative',
+        }}
+        className="mx-2"
+      >
+        <ShotEditor isDarkMode={isDarkMode} />
       </div>
 
       {/* 3. 右侧素材区容器（可拖拽改变宽度） */}

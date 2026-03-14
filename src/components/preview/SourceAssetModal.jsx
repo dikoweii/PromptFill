@@ -17,7 +17,7 @@ const SourceAssetModal = ({ item, onClose, language }) => {
 
   return (
     <div 
-      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300"
+      className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90 backdrop-blur-md"
       onClick={onClose}
     >
       <button 

@@ -10,10 +10,11 @@ const CATEGORY_TAB_MAP = {
   cinematography: 'photography',
 };
 
-// ─── 解析 Markdown frontmatter ───────────────────────────────────────────────
+// ─── 解析 Markdown frontmatter（兼容 BOM / CRLF）─────────────────────────────
 function parseFrontmatter(raw) {
-  const match = raw.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) return { meta: {}, content: raw };
+  const normalizedRaw = String(raw || '').replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
+  const match = normalizedRaw.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (!match) return { meta: {}, content: normalizedRaw };
   const meta = {};
   match[1].split('\n').forEach((line) => {
     const colonIdx = line.indexOf(':');
@@ -22,7 +23,7 @@ function parseFrontmatter(raw) {
     const val = line.slice(colonIdx + 1).trim().replace(/^["']|["']$/g, '');
     meta[key] = val;
   });
-  const content = raw.slice(match[0].length).trim();
+  const content = normalizedRaw.slice(match[0].length).trim();
   return { meta, content };
 }
 
@@ -76,45 +77,37 @@ const MarkdownRenderer = ({ content, isDarkMode }) => {
         </a>
       );
     },
-    code({ inline, className, children }) {
-      if (inline) {
-        return (
-          <code
-            style={{
-              background: c.inlineCodeBg,
-              color: '#f97316',
-              padding: '1px 5px',
-              borderRadius: 4,
-              fontSize: '0.88em',
-              fontFamily: 'monospace',
-            }}
-          >
-            {children}
-          </code>
-        );
-      }
+    pre({ children }) {
       return (
-        <pre
+        <blockquote
           style={{
-            background: c.codeBg,
-            border: `1px solid ${c.codeBorder}`,
+            borderLeft: '3px solid #f97316',
+            background: d ? 'rgba(249,115,22,0.08)' : 'rgba(249,115,22,0.06)',
             borderRadius: 8,
-            padding: '12px 14px',
-            overflowX: 'auto',
+            padding: '10px 12px',
             margin: '12px 0',
           }}
         >
-          <code
-            style={{
-              fontFamily: 'monospace',
-              fontSize: '0.85em',
-              color: c.codeText,
-              whiteSpace: 'pre',
-            }}
-          >
-            {children}
-          </code>
-        </pre>
+          {children}
+        </blockquote>
+      );
+    },
+    code({ children }) {
+      return (
+        <code
+          style={{
+            background: c.inlineCodeBg,
+            color: '#f97316',
+            padding: '1px 5px',
+            borderRadius: 4,
+            fontSize: '0.88em',
+            fontFamily: 'monospace',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+          }}
+        >
+          {children}
+        </code>
       );
     },
     blockquote({ children }) {
@@ -212,9 +205,11 @@ const MarkdownRenderer = ({ content, isDarkMode }) => {
   };
 
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-      {content}
-    </ReactMarkdown>
+    <div style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {content}
+      </ReactMarkdown>
+    </div>
   );
 };
 
@@ -581,15 +576,38 @@ const ArticleDetail = ({ article, language, isDarkMode, onBack, subcategoryName,
       {/* 封面 + 标题 + 正文：独立滚动区域 */}
       <div
         ref={scrollAreaRef}
-        style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 20 }}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          paddingBottom: 20,
+          userSelect: 'text',
+          WebkitUserSelect: 'text',
+        }}
         className="custom-scrollbar"
       >
-        {/* 封面 */}
-        {article.cover && (
-          <div style={{ width: '100%', aspectRatio: '16/9', borderRadius: 8, overflow: 'hidden', marginBottom: 14 }}>
+        {/* 封面占位：无图时也保留区域，避免顶部观感突兀 */}
+        <div
+          style={{
+            width: '100%',
+            aspectRatio: '16/9',
+            borderRadius: 8,
+            overflow: 'hidden',
+            marginBottom: 14,
+            background: isDarkMode ? '#1f1f1f' : '#d8d3cc',
+            border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {article.cover ? (
             <img src={article.cover} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div>
-        )}
+          ) : (
+            <span style={{ fontSize: 30, opacity: 0.45 }}>{isDarkMode ? '🖼️' : '📄'}</span>
+          )}
+        </div>
 
         {/* 标题与元信息：被 ref 监听，滚出视口时触发顶栏显示标题 */}
         <div ref={titleRef} style={{ marginBottom: 14 }}>
@@ -724,6 +742,8 @@ export const KnowledgePanel = ({ tabId, language, isDarkMode = true }) => {
             overflowX: 'hidden',
             display: isDetailView ? 'flex' : 'block',
             flexDirection: 'column',
+            userSelect: isDetailView ? 'text' : 'auto',
+            WebkitUserSelect: isDetailView ? 'text' : 'auto',
           }}
           className={`custom-scrollbar ${isDarkMode ? 'dark-mode' : ''}`}
         >

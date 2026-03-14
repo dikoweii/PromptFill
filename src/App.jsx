@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { Copy, Plus, X, Settings, Check, Edit3, Eye, Trash2, FileText, Pencil, Copy as CopyIcon, Globe, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, GripVertical, Download, Upload, Image as ImageIcon, List, Undo, Redo, Maximize2, RotateCcw, LayoutGrid, Search, ArrowRight, ArrowUpRight, ArrowUpDown, RefreshCw, Sparkles, Sun, Moon, ExternalLink } from 'lucide-react';
 import { WaypointsIcon } from './components/icons/WaypointsIcon';
@@ -24,12 +24,14 @@ import { smartFetch } from './utils/platform'; // 跨平台 fetch
 
 // ====== 导入自定义 Hooks ======
 import { useStickyState, useAsyncStickyState, useEditorHistory, useLinkageGroups, useShareFunctions, useTemplateManagement, useServiceWorker } from './hooks';
+import { useRootContext } from './context/RootContext';
 
 // ====== 导入 UI 组件 ======
-import { Variable, VisualEditor, PremiumButton, EditorToolbar, Lightbox, TemplatePreview, TemplateEditor, TemplatesSidebar, BanksSidebar, InsertVariableModal, AddBankModal, DiscoveryView, MobileSettingsView, SettingsView, Sidebar, TagSidebar } from './components';
+import { Variable, VisualEditor, PremiumButton, EditorToolbar, Lightbox, TemplatePreview, TemplateEditor, TemplatesSidebar, BanksSidebar, InsertVariableModal, AddBankModal, DiscoveryView, MobileSettingsView, SettingsView, Sidebar, TagSidebar, DarkModeLamp } from './components';
 import { ImagePreviewModal, SourceAssetModal, AnimatedSlogan, MobileAnimatedSlogan } from './components/preview';
 import { MobileBottomNav } from './components/mobile';
 import { ShareOptionsModal, CopySuccessModal, ImportTokenModal, ShareImportModal, CategoryManagerModal, ConfirmModal, AddTemplateTypeModal, VideoSubTypeModal } from './components/modals';
+import { SplitResetModal } from './components/modals/SplitResetModal';
 import { DataUpdateNotice, AppUpdateNotice } from './components/notifications';
 
 
@@ -45,6 +47,10 @@ const App = () => {
   // 获取当前路由
   const location = useLocation();
   const isSettingPage = location.pathname === '/setting';
+
+  const { isDarkMode, language, t, themeMode, setThemeMode, setLanguage } = useRootContext();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   // 当前应用代码版本 (必须与 package.json 和 version.json 一致)
   const APP_VERSION = "0.9.2";
@@ -62,26 +68,31 @@ const App = () => {
   const [templates, setTemplates, isTemplatesLoaded] = useAsyncStickyState(INITIAL_TEMPLATES_CONFIG, "app_templates_v10");
   
   // 基础配置保持使用 LocalStorage (同步读取)
-  const [language, setLanguage] = useStickyState(getSystemLanguage(), "app_language_v1"); // 全局UI语言
-  const [templateLanguage, setTemplateLanguage] = useStickyState(getSystemLanguage(), "app_template_language_v1"); // 模板内容语言
+  const [templateLanguage, setTemplateLanguage] = useStickyState(language, "app_template_language_v1"); // 模板内容语言
   const [activeTemplateId, setActiveTemplateId] = useStickyState("tpl_photo_grid", "app_active_template_id_v4");
 
   const [isSmartSplitLoading, setIsSmartSplitLoading] = useState(false);
   const [isSmartSplitConfirmOpen, setIsSmartSplitConfirmOpen] = useState(false);
+  // 拆分快照：{ templateId, originalContent } — 保存拆分前一刻的模板内容
+  // 拆分成功后保存，切换模板时清除
+  const [splitSnapshot, setSplitSnapshot] = useState(null);
+  const [isSplitResetModalOpen, setIsSplitResetModalOpen] = useState(false);
   const [isAddTemplateTypeModalOpen, setIsAddTemplateTypeModalOpen] = useState(false);
   const [isVideoSubTypeModalOpen, setIsVideoSubTypeModalOpen] = useState(false);
 
-  // 包装 setActiveTemplateId，在智能拆分期间防止切换
+  // 包装 setActiveTemplateId，在智能拆分期间防止切换；切换时清除拆分快照
   const handleSetActiveTemplateId = React.useCallback((id) => {
     if (isSmartSplitLoading) {
-      return; // 正在拆分时，静默忽略切换请求，或者可以添加提示
+      return;
     }
+    setSplitSnapshot(null); // 切换模板时清除原文快照
     setActiveTemplateId(id);
   }, [isSmartSplitLoading, setActiveTemplateId]);
   
   // Derived State: Current Active Template
+  // 当 activeTemplateId 无效时，回退到最新的模板（数组末尾）而不是最旧的
   const activeTemplate = useMemo(() => {
-    return templates.find(t => t.id === activeTemplateId) || templates[0];
+    return templates.find(t => t.id === activeTemplateId) || templates[templates.length - 1];
   }, [templates, activeTemplateId]);
 
   const userTemplates = useMemo(() => {
@@ -90,46 +101,6 @@ const App = () => {
   }, [templates]);
   
   const [lastAppliedDataVersion, setLastAppliedDataVersion] = useStickyState("", "app_data_version_v1");
-  const [themeMode, setThemeMode] = useStickyState("system", "app_theme_mode_v1");
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-    if (themeMode === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleChange = (e) => setIsDarkMode(e.matches);
-      setIsDarkMode(mediaQuery.matches);
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    } else {
-      setIsDarkMode(themeMode === 'dark');
-    }
-  }, [themeMode]);
-
-  // 同步移动端浏览器状态栏颜色
-  useEffect(() => {
-    const themeColor = isDarkMode ? '#181716' : '#D6D6D6';
-    
-    // 1. 更新通用 theme-color
-    let meta = document.querySelector('meta[name="theme-color"]:not([media])');
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.setAttribute('name', 'theme-color');
-      document.head.appendChild(meta);
-    }
-    meta.setAttribute('content', themeColor);
-    
-    // 2. 更新带 media 的 theme-color (保证系统级别平滑过渡)
-    const lightMeta = document.querySelector('meta[name="theme-color"][media*="light"]');
-    const darkMeta = document.querySelector('meta[name="theme-color"][media*="dark"]');
-    if (lightMeta) lightMeta.setAttribute('content', '#D6D6D6');
-    if (darkMeta) darkMeta.setAttribute('content', '#181716');
-    
-    // 3. 始终保持 black-translucent 以实现真正的全屏沉浸体验
-    let appleMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
-    if (appleMeta) {
-      appleMeta.setAttribute('content', 'black-translucent');
-    }
-  }, [isDarkMode]);
 
   const [showDataUpdateNotice, setShowDataUpdateNotice] = useState(false);
   const [showAppUpdateNotice, setShowAppUpdateNotice] = useState(false);
@@ -283,24 +254,99 @@ const App = () => {
   const [isFileSystemSupported, setIsFileSystemSupported] = useState(false);
   
   // Template Tag Management State
-  const [selectedTags, setSelectedTags] = useState("");
+  const [selectedTags, setSelectedTags] = useState(() => {
+    return searchParams.get('tag') || "";
+  });
   const [selectedLibrary, setSelectedLibrary] = useState("all"); // all, official, personal
-  const [selectedType, setSelectedType] = useState("all"); // all, image, video
+  const [selectedType, setSelectedType] = useState(() => {
+    const tab = searchParams.get('tab');
+    return ['all', 'image', 'video'].includes(tab) ? tab : "all";
+  });
+  
+  // 同步 URL 参数到状态
+  useEffect(() => {
+    const tab = searchParams.get('tab') || 'all';
+    if (tab !== selectedType && ['all', 'image', 'video'].includes(tab)) {
+      setSelectedType(tab);
+    }
+    const tag = searchParams.get('tag') || '';
+    if (tag !== selectedTags) {
+      setSelectedTags(tag);
+    }
+  }, [searchParams]);
+
+  // 同步状态到 URL 参数
+  useEffect(() => {
+    const newParams = new URLSearchParams(searchParams);
+    let changed = false;
+    
+    // 同步 tab (Type)
+    if (selectedType !== 'all') {
+      if (newParams.get('tab') !== selectedType) {
+        newParams.set('tab', selectedType);
+        changed = true;
+      }
+    } else if (newParams.has('tab')) {
+      newParams.delete('tab');
+      changed = true;
+    }
+
+    // 同步 tag
+    if (selectedTags) {
+      if (newParams.get('tag') !== selectedTags) {
+        newParams.set('tag', selectedTags);
+        changed = true;
+      }
+    } else if (newParams.has('tag')) {
+      newParams.delete('tag');
+      changed = true;
+    }
+
+    if (changed) {
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [selectedType, selectedTags]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [editingTemplateTags, setEditingTemplateTags] = useState(null); // {id, tags}
-  const [isDiscoveryView, setDiscoveryView] = useState(true); // 首次加载默认显示发现（海报）视图
+  const [isDiscoveryView, setDiscoveryView] = useState(() => {
+    // 只有在根路径或 /explore 路径下才默认显示发现页
+    return location.pathname === '/explore' || location.pathname === '/';
+  });
   
+  // 同步 URL 路径到 isDiscoveryView 状态
+  useEffect(() => {
+    if (location.pathname === '/explore' && !isDiscoveryView) {
+      setDiscoveryView(true);
+    } else if (location.pathname === '/' && isDiscoveryView) {
+      setDiscoveryView(false);
+    }
+  }, [location.pathname]);
+
   // 统一的发现页切换处理器
   const handleSetDiscoveryView = React.useCallback((val, options = {}) => {
     const { skipMobileTabSync = false } = options;
     setDiscoveryView(val);
+    
+    // 同步 URL 路径：发现页显示时使用 /explore，隐藏时（详情页）使用 /
+    const targetPath = val ? '/explore' : '/';
+    if (location.pathname !== targetPath) {
+      navigate({
+        pathname: targetPath,
+        search: searchParams.toString()
+      }, { replace: true });
+    }
+
+    // 同步到 RootLayout 的侧边栏状态
+    window.dispatchEvent(new CustomEvent('app-sync-tab', { detail: val ? 'home' : 'details' }));
+
     // 移动端：侧边栏里的“回到发现页”按钮需要同步切回 mobileTab
     if (!skipMobileTabSync && isMobileDevice && val) {
       setMobileTab('home');
     } else if (!skipMobileTabSync && isMobileDevice && !val && mobileTab === 'home') {
       setMobileTab('editor');
     }
-  }, [isMobileDevice, mobileTab]);
+  }, [isMobileDevice, mobileTab, location.pathname, searchParams, navigate]);
 
   const [isPosterAutoScrollPaused, setIsPosterAutoScrollPaused] = useState(false);
   const posterScrollRef = useRef(null);
@@ -317,30 +363,6 @@ const App = () => {
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [randomSeed, setRandomSeed] = useState(Date.now()); // 用于随机排序的种子
   
-  // 趣味设计：灯具摆动状态
-  const [lampRotation, setLampRotation] = useState(0);
-  const [isLampHovered, setIsLampHovered] = useState(false);
-  const [isLampOn, setIsLampOn] = useState(true); // 暗色模式下灯是否开启 (强度控制)
-  
-  // 当暗夜模式关闭时，重置灯的状态为开启
-  useEffect(() => {
-    if (!isDarkMode) {
-      setIsLampOn(true);
-    }
-  }, [isDarkMode]);
-
-  const handleLampMouseMove = (e) => {
-    if (!isDarkMode) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const mouseX = e.clientX;
-    const diffX = mouseX - centerX;
-    // 灵敏度提升：由于感应区缩小到 32px，调整系数以保持摆动幅度
-    const rotation = Math.max(-12, Math.min(12, -diffX / 1.5));
-    setLampRotation(rotation);
-    setIsLampHovered(true);
-  };
-
   const [updateNoticeType, setUpdateNoticeType] = useState(null); // 'app' | 'data' | null
 
   // Service Worker - 图片缓存
@@ -467,28 +489,21 @@ const App = () => {
     }
   }, [activeTemplateId, isEditing, language]);
 
-  // Helper: Translate
-  const t = (key, params = {}) => {
-    let str = TRANSLATIONS[language][key] || key;
-    Object.keys(params).forEach(k => {
-        str = str.replace(`{{${k}}}`, params[k]);
-    });
-    return str;
-  };
-
+  // Helper: displayTag
   const displayTag = React.useCallback((tag) => {
     return TAG_LABELS[language]?.[tag] || tag;
   }, [language]);
 
-  // 确保有一个有效的 activeTemplateId - 自动选择第一个模板
+  // 确保有一个有效的 activeTemplateId - 自动选择最新的模板
   useEffect(() => {
       if (templates.length > 0) {
           // 检查当前 activeTemplateId 是否有效
           const currentTemplateExists = templates.some(t => t.id === activeTemplateId);
           if (!currentTemplateExists || !activeTemplateId) {
-              // 如果当前选中的模板不存在或为空，选择第一个模板
-              console.log('[自动选择] 选择第一个模板:', templates[0].id);
-              setActiveTemplateId(templates[0].id);
+              // 如果当前选中的模板不存在或为空，选择最新的模板（数组末尾）
+              const newestTemplate = templates[templates.length - 1];
+              console.log('[自动选择] 选择最新模板:', newestTemplate.id);
+              setActiveTemplateId(newestTemplate.id);
           }
       }
   }, [templates, activeTemplateId]);  // 依赖 templates 和 activeTemplateId
@@ -502,8 +517,9 @@ const App = () => {
 
       // 编辑 / 词库 Tab：确保有选中的模板
       if ((mobileTab === 'editor' || mobileTab === 'banks') && templates.length > 0 && !activeTemplateId) {
-          console.log('[tab切换] 自动选择第一个模板:', templates[0].id);
-          setActiveTemplateId(templates[0].id);
+          const newestTemplate = templates[templates.length - 1];
+          console.log('[tab切换] 自动选择最新模板:', newestTemplate.id);
+          setActiveTemplateId(newestTemplate.id);
       }
   }, [mobileTab, templates, activeTemplateId]);
 
@@ -785,6 +801,7 @@ const App = () => {
     doCopyShareLink,
     handleShareToken,
     getShortCodeFromServer,
+    doCopyRawData,
   } = useShareFunctions(
     activeTemplate,
     setTemplates,
@@ -871,9 +888,12 @@ const App = () => {
 
   const confirmDeleteTemplate = React.useCallback(() => {
     if (!deleteTemplateTargetId) return;
+    if (splitSnapshot?.templateId === deleteTemplateTargetId) {
+      setSplitSnapshot(null);
+    }
     handleDeleteTemplate(deleteTemplateTargetId, undefined, { skipConfirm: true });
     setDeleteTemplateTargetId(null);
-  }, [deleteTemplateTargetId, handleDeleteTemplate]);
+  }, [deleteTemplateTargetId, handleDeleteTemplate, splitSnapshot]);
 
   const openExportModal = React.useCallback(() => {
     if (userTemplates.length === 0) {
@@ -958,39 +978,201 @@ const App = () => {
     handleAddCustomAndSelectFromHook(key, index, newValue, setActivePopover);
   }, [handleAddCustomAndSelectFromHook]);
 
+  // 将模板内容中的 {{变量}} 占位符替换为当前已选的实际值
+  // 这样传给 AI 的是"生成一个现代风格的图片"而非"生成一个{{style}}的图片"
+  const resolveTemplateVariables = React.useCallback((templateText, template, langKey) => {
+    if (!templateText || !template?.selections) return templateText;
+    
+    return templateText.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+      const trimmedKey = key.trim();
+      // 从 selections 中查找（支持 key 或 key-N 格式）
+      const selectionValue = template.selections[trimmedKey] 
+        || template.selections[`${trimmedKey}-0`]
+        || Object.entries(template.selections).find(([k]) => k === trimmedKey || k.startsWith(`${trimmedKey}-`))?.[1];
+      
+      if (selectionValue) {
+        if (typeof selectionValue === 'object' && selectionValue !== null) {
+          return selectionValue[langKey] || selectionValue.cn || selectionValue.en || match;
+        }
+        return String(selectionValue);
+      }
+      // 兜底1：从 defaults 中获取
+      const defaultValue = defaults[trimmedKey];
+      if (defaultValue) {
+        if (typeof defaultValue === 'object' && defaultValue !== null) {
+          return defaultValue[langKey] || defaultValue.cn || defaultValue.en || match;
+        }
+        return String(defaultValue);
+      }
+      // 兜底2：从 banks 的第一个 option 取值（确保 AI 收到的是自然语言而非占位符）
+      const bank = banks[trimmedKey];
+      if (bank?.options?.length > 0) {
+        const firstOpt = bank.options[0];
+        if (typeof firstOpt === 'object' && firstOpt !== null) {
+          return firstOpt[langKey] || firstOpt.cn || firstOpt.en || match;
+        }
+        return String(firstOpt);
+      }
+      return match; // 实在找不到才保留占位符
+    });
+  }, [defaults, banks]);
+
   // AI 生成词条处理函数（增强版：支持上下文感知 + 联动组清理）
-  const performSmartSplit = React.useCallback(async () => {
+  const performSmartSplit = React.useCallback(async (customSystemPrompt = null, debugModel = null, debugApiKey = null, splitMode = 'lite') => {
     if (!activeTemplate) return;
     
-    const rawPrompt = getLocalized(activeTemplate.content, templateLanguage);
-    
+    // 获取原始模板文本（含 {{变量}} 占位符）
+    const templateText = getLocalized(activeTemplate.content, templateLanguage);
+
+    // 将 {{变量}} 替换为实际已选值，传给 AI 的是完整的自然语言文本
+    const resolvedPrompt = resolveTemplateVariables(templateText, activeTemplate, templateLanguage);
+
+    // 自动检测提示词的实际语言（不依赖当前 tab），确保双语拆分结果正确
+    // 中文字符占比 > 10% 判定为中文，否则判定为英文
+    const chineseCharCount = (resolvedPrompt.match(/[\u4e00-\u9fa5]/g) || []).length;
+    const detectedLang = chineseCharCount / Math.max(resolvedPrompt.length, 1) > 0.1 ? 'cn' : 'en';
+    if (detectedLang !== templateLanguage) {
+      console.log(`[SmartSplit] 语言自动修正: tab=${templateLanguage} → 检测到=${detectedLang}`);
+    }
+
+    // 检测替换情况（调试用）
+    const hasVariables = /\{\{[^}]+\}\}/.test(templateText);
+    const afterResolveHasVars = /\{\{[^}]+\}\}/.test(resolvedPrompt);
+    console.log('[SmartSplit] 变量替换:', hasVariables ? `已替换${afterResolveHasVars ? '（部分未替换）' : '完成'}` : '无变量');
+    console.log('[SmartSplit] 原始文本长度:', templateText.length, '→ 替换后:', resolvedPrompt.length);
+
+    // 保存回滚快照（拆分前的完整状态）
+    const rollbackSnapshot = {
+      templateContent: activeTemplate.content,
+      templateName: activeTemplate.name,
+      templateTags: activeTemplate.tags,
+      templateSelections: { ...activeTemplate.selections },
+      banks: JSON.parse(JSON.stringify(banks)),
+      defaults: JSON.parse(JSON.stringify(defaults)),
+      tempName: tempTemplateName,
+    };
+
+    const splitStartTime = Date.now();
     setIsSmartSplitLoading(true);
     try {
-      // 提取现有词库的特征上下文（键名、中文名称、示例词组）
-      // 我们只提取前 2 个选项作为示例，避免上下文过长
-      const existingBankContext = Object.entries(banks).map(([key, bank]) => {
-        const label = typeof bank.label === 'object' ? (bank.label.cn || bank.label.en) : bank.label;
-        const samples = (bank.options || [])
-          .slice(0, 2)
-          .map(opt => typeof opt === 'object' ? (opt.cn || opt.en) : opt)
-          .join(', ');
-        return `- {{${key}}} (${label}) [示例: ${samples}]`;
-      }).join('\n');
+      // 智能过滤词库上下文：只传与当前提示词相关的变量，避免全量枚举浪费 token
+      // 策略：提取提示词中的关键词，与词库的 label 和 options 做相关性匹配
+      const promptWords = resolvedPrompt.toLowerCase().replace(/[^\w\u4e00-\u9fa5]/g, ' ').split(/\s+/).filter(w => w.length > 1);
+      const existingBankContext = Object.entries(banks)
+        .filter(([key, bank]) => {
+          // 命中条件1：变量 key 本身出现在提示词中
+          if (promptWords.some(w => key.toLowerCase().includes(w) || w.includes(key.toLowerCase()))) return true;
+          // 命中条件2：变量的 label（中文名）与提示词有重叠
+          const label = typeof bank.label === 'object' ? (bank.label.cn || '') : (bank.label || '');
+          if (label && promptWords.some(w => label.includes(w))) return true;
+          // 命中条件3：词库的选项值出现在提示词中（说明这个变量被用到了）
+          return (bank.options || []).some(opt => {
+            const val = typeof opt === 'object' ? (opt.cn || '') : String(opt);
+            return val.length > 1 && resolvedPrompt.includes(val);
+          });
+        })
+        .map(([key, bank]) => {
+          const label = typeof bank.label === 'object' ? (bank.label.cn || bank.label.en) : bank.label;
+          const samples = (bank.options || [])
+            .slice(0, 2)
+            .map(opt => typeof opt === 'object' ? (opt.cn || opt.en) : opt)
+            .join(', ');
+          return `- {{${key}}} (${label}) [示例: ${samples}]`;
+        }).join('\n');
+
+      console.log(`[SmartSplit] 词库过滤: ${Object.keys(banks).length} → ${existingBankContext.split('\n').filter(Boolean).length} 个相关变量`);
 
       const result = await polishAndSplitPrompt({
-        rawPrompt,
-        existingBankContext, // 发送详细上下文
+        rawPrompt: resolvedPrompt,
+        existingBankContext,
         availableTags: TEMPLATE_TAGS,
-        language: templateLanguage
+        language: detectedLang,
+        customSystemPrompt,
+        debugModel,
+        debugApiKey,
+        splitMode,
       });
 
       console.log('[App] Smart Split Result:', result);
 
       if (result) {
+        // ── Lite 模式特殊处理：AI 返回标注文本 {{key::原词}}，匹配已有词库 ──
+        if (result._liteMode) {
+          const isBilingual = result._bilingual && typeof result.content === 'object' && result.content.cn && result.content.en;
+          
+          console.log('[SmartSplit Lite] 检测到变量:', result.variables.map(v => `${v.key}=${v.default?.cn || v.default?.en}`), isBilingual ? '(双语)' : '(单语)');
+
+          // 匹配已有词库，丰富 variables
+          const enrichedVariables = result.variables.map(v => {
+            const originalWordCn = v.default?.cn || v.key;
+            const originalWordEn = v.default?.en || originalWordCn;
+            const originalOpt = { cn: originalWordCn, en: originalWordEn };
+            
+            if (banks[v.key]) {
+              const existingBank = banks[v.key];
+              // 用 cn 或 en 任意一个匹配即视为已存在
+              const alreadyExists = (existingBank.options || []).some(opt => {
+                const valCn = typeof opt === 'object' ? (opt.cn || '') : opt;
+                const valEn = typeof opt === 'object' ? (opt.en || '') : opt;
+                return valCn === originalWordCn || valEn === originalWordEn;
+              });
+              console.log(`[SmartSplit Lite] ✅ 命中词库: ${v.key} → "${originalWordCn}" / "${originalWordEn}"${alreadyExists ? '' : '（新增选项）'}`);
+              return {
+                key: v.key,
+                label: existingBank.label,
+                category: existingBank.category || 'other',
+                options: alreadyExists ? existingBank.options : [originalOpt, ...(existingBank.options || [])],
+                default: originalOpt,
+              };
+            } else {
+              console.log(`[SmartSplit Lite] ⚡ 新变量: ${v.key} → "${originalWordCn}" / "${originalWordEn}"`);
+              return {
+                key: v.key,
+                label: { cn: v.key, en: v.key },
+                category: 'other',
+                options: [originalOpt],
+                default: originalOpt,
+              };
+            }
+          });
+
+          // 双语模式：content 已经是 { cn, en }，直接使用
+          // 单语模式：只填充检测到的语言
+          if (!isBilingual) {
+            const liteContent = typeof result.content === 'string' ? result.content : (result.content[detectedLang] || result.content.cn || result.content.en);
+            result.content = { [detectedLang]: liteContent };
+          }
+          result.variables = enrichedVariables;
+          result.name = result.name || activeTemplate.name;
+        }
+
+        // 验证返回结果与原文的相似度（防止 AI 返回严重偏离的内容）
+        // 取最长的那个语言版本来比对，避免因双语某一项为空导致误判回滚
+        const resultContentText = typeof result.content === 'object'
+          ? ([result.content.cn, result.content.en].filter(Boolean).sort((a, b) => b.length - a.length)[0] || '')
+          : (result.content || '');
+        
+        // 去除变量占位符后对比长度
+        // 注意：原文若是英文，翻译成中文后字符数会缩短（中文更精炼），因此放宽下限到 0.15
+        const cleanOriginal = resolvedPrompt.replace(/\{\{[^}]+\}\}/g, '').trim();
+        const cleanResult = resultContentText.replace(/\{\{[^}]+\}\}/g, '').trim();
+        const lengthRatio = cleanResult.length / Math.max(cleanOriginal.length, 1);
+        
+        if (lengthRatio < 0.15 || lengthRatio > 3.5) {
+          console.warn('[SmartSplit] 结果与原文差异过大，触发回滚', { lengthRatio, original: cleanOriginal.length, result: cleanResult.length });
+          throw new Error(language === 'cn' 
+            ? `拆分结果与原文差异过大（比例 ${lengthRatio.toFixed(2)}），已自动回退` 
+            : `Split result differs too much from original (ratio ${lengthRatio.toFixed(2)}), reverted automatically`);
+        }
+
         // 1. 更新模板内容
-        const newContent = typeof activeTemplate.content === 'object'
-          ? { ...activeTemplate.content, [templateLanguage]: result.content }
-          : result.content;
+        // AI 返回的 result.content 是双语对象 { cn, en }，直接整体替换
+        // 以用户当前编辑的语言为权威源，拆分结果完全覆盖两个语言
+        const newContent = (result.content && typeof result.content === 'object' && (result.content.cn || result.content.en))
+          ? result.content  // AI 返回了双语对象，直接用
+          : typeof activeTemplate.content === 'object'
+            ? { ...activeTemplate.content, [detectedLang]: result.content }  // AI 只返回了字符串，仅更新检测到的语言
+            : result.content;
         
         // 2. 批量处理变量和词库
         const newBanks = { ...banks };
@@ -998,32 +1180,84 @@ const App = () => {
         const newSelections = { ...activeTemplate.selections };
 
         if (result.variables && Array.isArray(result.variables)) {
-          result.variables.forEach(v => {
-            // 如果是新词库，添加到 banks
-            if (!newBanks[v.key]) {
-              newBanks[v.key] = {
-                label: typeof v.label === 'string' ? { cn: v.label, en: v.label } : v.label,
-                category: v.category || 'other',
-                options: v.options.map(opt => (typeof opt === 'string' ? { cn: opt, en: opt } : opt))
+          // ── 硬性截断：最多保留 5 个变量 ──
+          const MAX_VARIABLES = 5;
+          let acceptedVars = result.variables;
+          let discardedVars = [];
+
+          if (result.variables.length > MAX_VARIABLES) {
+            console.warn(`[SmartSplit] AI 返回了 ${result.variables.length} 个变量，强制截断为 ${MAX_VARIABLES} 个`);
+            acceptedVars = result.variables.slice(0, MAX_VARIABLES);
+            discardedVars = result.variables.slice(MAX_VARIABLES);
+          }
+
+          // ── 将超出的变量替换回其 default 值（清理 content 中的多余占位符）──
+          let finalContent = newContent;
+          if (discardedVars.length > 0) {
+            const replaceInContent = (text) => {
+              if (typeof text !== 'string') return text;
+              let result = text;
+              discardedVars.forEach(v => {
+                const defaultVal = v.default || (v.options && v.options[0]);
+                const replaceWith = typeof defaultVal === 'object'
+                  ? (defaultVal[detectedLang] || defaultVal.cn || defaultVal.en || v.key)
+                  : (String(defaultVal || v.key));
+                result = result.replace(new RegExp(`\\{\\{${v.key}\\}\\}`, 'g'), replaceWith);
+              });
+              return result;
+            };
+
+            if (typeof finalContent === 'object' && finalContent !== null) {
+              finalContent = {
+                cn: replaceInContent(finalContent.cn),
+                en: replaceInContent(finalContent.en),
               };
-              // 添加到 defaults
-              newDefaults[v.key] = typeof v.default === 'string' ? { cn: v.default, en: v.default } : v.default;
+            } else {
+              finalContent = replaceInContent(finalContent);
             }
-            
+          }
+
+          // ── 写入接受的变量到 banks / defaults / selections ──
+          acceptedVars.forEach(v => {
+            if (!v.key || !v.options || !Array.isArray(v.options) || v.options.length === 0) {
+              console.warn('[SmartSplit] 跳过无效变量（缺少 key 或 options）:', v);
+              return;
+            }
+
+            const normalizedOptions = v.options.map(opt =>
+              typeof opt === 'string' ? { cn: opt, en: opt } : opt
+            );
+            const normalizedDefault = v.default
+              ? (typeof v.default === 'string' ? { cn: v.default, en: v.default } : v.default)
+              : normalizedOptions[0];
+
+            // 无论词库是否已存在，都用 AI 本次返回的 options/label 覆盖（确保词条正确）
+            newBanks[v.key] = {
+              label: typeof v.label === 'string' ? { cn: v.label, en: v.label } : (v.label || { cn: v.key, en: v.key }),
+              category: v.category || 'other',
+              options: normalizedOptions,
+            };
+            newDefaults[v.key] = normalizedDefault;
+
             // 设置当前模板的选择值
-            const defaultValue = v.default || (v.options && v.options[0]);
-            newSelections[v.key] = typeof defaultValue === 'string' ? { cn: defaultValue, en: defaultValue } : defaultValue;
+            newSelections[v.key] = normalizedDefault;
           });
+
+          // ── 用截断后的 content 替换 newContent ──
+          // eslint-disable-next-line no-param-reassign
+          result._finalContent = finalContent;
         }
 
         // 3. 更新全局状态
         setBanks(newBanks);
         setDefaults(newDefaults);
 
+        // 如果变量被截断，使用替换了多余占位符的内容
+        const finalContentToSave = result._finalContent !== undefined ? result._finalContent : newContent;
+
         // 4. 更新当前模板
         setTemplates(prev => prev.map(t => {
           if (t.id === activeTemplateId) {
-            // 过滤标签，确保只使用系统中存在的标签
             const filteredTags = result.tags 
               ? result.tags.filter(tag => TEMPLATE_TAGS.includes(tag))
               : t.tags;
@@ -1031,7 +1265,7 @@ const App = () => {
             return {
               ...t,
               name: result.name || t.name,
-              content: newContent,
+              content: finalContentToSave,
               selections: newSelections,
               tags: filteredTags
             };
@@ -1044,16 +1278,52 @@ const App = () => {
           setTempTemplateName(typeof result.name === 'string' ? result.name : (result.name[language] || result.name.cn || result.name.en));
         }
 
-        // 提示成功
         console.log('[App] Smart Split Success');
+
+        // 6. 保存原文快照（供用户查看原文 / 重新拆分使用）
+        const varCount = result.variables?.length || 0;
+        setSplitSnapshot({
+          templateId: activeTemplateId,
+          resolvedPrompt,             // 已填充变量的完整原文
+          originalContent: rollbackSnapshot.templateContent, // 含 {{变量}} 的模板原文
+          variableCount: varCount,
+          splitAt: Date.now(),
+          splitDurationMs: Date.now() - splitStartTime,
+        });
+
+        // 7. 拆分成功后切换到预览交互模式，让用户直接看到拆分结果
+        setIsEditing(false);
       }
     } catch (error) {
       console.error('[App] Smart Split Error:', error);
+
+      // 执行回滚：恢复到拆分前的快照
+      try {
+        setBanks(rollbackSnapshot.banks);
+        setDefaults(rollbackSnapshot.defaults);
+        setTemplates(prev => prev.map(t => {
+          if (t.id === activeTemplateId) {
+            return {
+              ...t,
+              content: rollbackSnapshot.templateContent,
+              name: rollbackSnapshot.templateName,
+              tags: rollbackSnapshot.templateTags,
+              selections: rollbackSnapshot.templateSelections,
+            };
+          }
+          return t;
+        }));
+        setTempTemplateName(rollbackSnapshot.tempName);
+        console.log('[App] Smart Split Rolled Back Successfully');
+      } catch (rollbackError) {
+        console.error('[App] Rollback Failed:', rollbackError);
+      }
+
       alert(language === 'cn' ? `智能拆分失败: ${error.message}` : `Smart Split failed: ${error.message}`);
     } finally {
       setIsSmartSplitLoading(false);
     }
-  }, [activeTemplate, templateLanguage, language, banks, defaults, setBanks, setDefaults, setTemplates, activeTemplateId, setTempTemplateName]);
+  }, [activeTemplate, templateLanguage, language, banks, defaults, setBanks, setDefaults, setTemplates, activeTemplateId, setTempTemplateName, resolveTemplateVariables, tempTemplateName, setIsEditing]);
 
   const handleSmartSplit = React.useCallback(async () => {
     if (!activeTemplate) return;
@@ -1064,11 +1334,175 @@ const App = () => {
       return;
     }
 
-    setIsSmartSplitConfirmOpen(true);
-  }, [activeTemplate, templateLanguage, language]);
+    // 检测是否已有变量：如果有 {{xxx}} 占位符，给用户提示
+    const hasVariables = /\{\{[^}]+\}\}/.test(rawPrompt);
+    if (hasVariables) {
+      setIsSmartSplitConfirmOpen(true);
+    } else {
+      // 没有变量，直接执行，不弹确认框
+      await performSmartSplit(null);
+    }
+  }, [activeTemplate, templateLanguage, language, performSmartSplit]);
+
+  // 还原到拆分前的内容（从对比弹窗确认还原后调用）
+  const handleRestoreFromSnapshot = React.useCallback(() => {
+    if (!splitSnapshot || !activeTemplate || splitSnapshot.templateId !== activeTemplateId) return;
+    setTemplates(prev => prev.map(t => {
+      if (t.id === activeTemplateId) {
+        return { ...t, content: splitSnapshot.originalContent };
+      }
+      return t;
+    }));
+    setSplitSnapshot(null);
+  }, [splitSnapshot, activeTemplate, activeTemplateId, setTemplates]);
+
+  // 生成调试模式下的默认系统提示词（与后端 POLISH_AND_SPLIT 保持一致）
+  const getDebugSystemPrompt = React.useCallback(() => {
+    const tagsHint = TEMPLATE_TAGS.length > 0 ? `可用标签（只从这里选择）：${TEMPLATE_TAGS.join('、')}` : '';
+
+    // 调试面板：传全量词库（方便调试时观察所有可用变量）
+    const existingBankContext = Object.entries(banks).map(([key, bank]) => {
+      const label = typeof bank.label === 'object' ? (bank.label.cn || bank.label.en) : bank.label;
+      const samples = (bank.options || []).slice(0, 2)
+        .map(opt => typeof opt === 'object' ? (opt.cn || opt.en) : opt).join(', ');
+      return `- {{${key}}} (${label}) [示例: ${samples}]`;
+    }).join('\n');
+    const bankHint = existingBankContext ? `\n\n【现有词库参考（优先复用这些变量名，共 ${Object.keys(banks).length} 个）】\n${existingBankContext}` : '';
+
+    return `你是 Prompt Fill 平台的智能模板拆分专家。用户给你一段完整的 AI 图像/视频提示词，你需要将其转化为一个可复用的填空模板。
+
+⚠️ 输出规则：只输出纯 JSON，不加任何 Markdown 标记、代码块或说明文字。
+
+━━━ 第一步：识别候选变量 ━━━
+
+先找出提示词中所有"换掉它整张图就变了"的核心要素：
+✅ 主体/主角类型 → 换掉它，图像的主角完全不同（如：机器人 → 宇航员）
+✅ 整体视觉风格 → 换掉它，图像基调/渲染方式完全不同（如：写实 → 赛博朋克）
+✅ 场景/背景 → 换掉它，图像的空间环境完全不同（如：星云 → 废土城市）
+✅ 核心动作/姿态 → 换掉它，图像的故事感完全不同（如：蹲伏监视 → 奔跑逃离）
+
+以下内容即使再具体也不要提取为变量（属于"调味品"，换了只是微调）：
+❌ 颜色/色调 → "赭石黄"、"淡紫色"、"金色光晕"
+❌ 材质/纹理 → "铆接面板"、"磨损质感"、"光滑球形"
+❌ 技术参数 → "8K"、"Octane渲染"、"浅景深"、"体积光"
+❌ 程度修饰词 → "超精细"、"戏剧性"、"微妙的"
+❌ 零件/局部细节 → 触须形状、手臂关节、底盘纹路、天线样式
+
+━━━ 第二步：合并压缩到 2-5 个 ━━━
+
+这是最关键的一步。模板变量不是越多越好——变量太多会让用户不知道从哪改起。
+
+目标：3-4 个变量是最理想的，绝对不超过 5 个。
+
+合并的核心原则：
+- 同属"外观/形态"的多个细节 → 合并为一个综合风格变量，options 写成完整短句
+  例：外形(球状) + 颜色(金属黄) + 质感(磨损) → {{robot_style}} = "磨损金属球状机器人"
+- 同属"背景/环境"的多个描述 → 合并为一个背景变量
+  例：背景场景(星云) + 背景色调(深紫) + 天气(弥漫雾气) → {{background}} = "深紫星云弥漫雾气"
+- 同属"光线/氛围"的描述 → 合并为一个氛围变量或直接保留为固定文本
+
+如果候选变量超过 5 个，按以下优先级保留：
+1. 主体/主角（最高优先，必须保留）
+2. 整体风格/基调
+3. 场景/背景
+4. 核心动作（如有明显动作叙事）
+5. 其余全部合并或舍弃
+
+━━━ 变量命名规范 ━━━
+
+- 格式：小写字母 + 下划线，如 art_style、character_type
+- 优先复用现有变量名（见下方词库参考）
+- 名称代表"一类概念"而非单个具体值${bankHint}
+
+━━━ 输出 JSON 格式 ━━━
+
+{
+  "name": { "cn": "模板中文名（4-8字）", "en": "Template Name" },
+  "content": {
+    "cn": "中文模板内容，只在核心可变位置插入 {{variable_key}}，其余调味细节保留原文",
+    "en": "English version with same {{variable_key}} placeholders"
+  },
+  "variables": [
+    {
+      "key": "variable_key",
+      "label": { "cn": "变量中文名", "en": "Variable Name" },
+      "category": "item",
+      "options": [
+        { "cn": "选项A（与原文完全一致的那个词）", "en": "Option A" },
+        { "cn": "选项B", "en": "Option B" },
+        { "cn": "选项C", "en": "Option C" },
+        { "cn": "选项D", "en": "Option D" },
+        { "cn": "选项E", "en": "Option E" }
+      ],
+      "default": { "cn": "选项A（与原文完全一致的那个词）", "en": "Option A" }
+    }
+  ],
+  "tags": ["标签"]
+}
+
+category 只能是：character（人物）/ item（物品）/ action（动作）/ location（场景）/ visual（视觉）/ other（其他）
+${tagsHint ? `\n${tagsHint}` : ''}
+
+━━━ 输出前自检（必做）━━━
+
+在输出 JSON 之前，先在脑中过一遍：
+□ variables 数组有几个？→ 必须 ≤ 5，否则继续合并
+□ content 里的每个 {{key}} 在 variables 里都有定义吗？
+□ variables 里的每个 key 在 content 里都出现了吗？
+□ 每个 variable 的 options[0] 和 default 完全相同吗？
+□ default 的值和原文里对应的词完全一致吗？（逐字匹配）
+
+━━━ 用户的完整提示词 ━━━`;
+  }, [banks, TEMPLATE_TAGS]);
+
+  // 生成轻量拆分模式的系统提示词（Lite：只分词标注，不生成 JSON）
+  const getDebugSystemPromptLite = React.useCallback(() => {
+    return `你是提示词变量标注专家。用户给你一段 AI 图像/视频提示词，你需要找出其中"换掉就整体变了"的核心词，用 {{变量名::原词}} 的格式标注。
+
+格式：{{变量名::原词}}，"原词"必须与原文完全一致。
+
+规则：
+1. 只标记 2-5 个核心可替换词，不要过多
+2. 颜色、材质、技术参数、修饰词不要标记
+3. 直接输出标注后的原文，不加任何解释或 Markdown
+4. 变量名用小写英文+下划线
+5. 优先复用以下常用变量名（按类别）：
+  人物：subject、character_type、character_name、expressions、hair_style
+  服饰：clothing、clothing_male、clothing_female、accessory
+  动作：action_pose、action_status、dynamic_action
+  场景：background_scene、scene_type、urban_location、travel_location
+  风格：art_style、render_style、draw_style、video_art_style
+  镜头：camera_angle、lens_type、special_view
+  城市：city_name
+  物品：design_item、product_category
+6. 不匹配时可自创合理的变量名
+
+示例输入：
+一只可爱的柴犬穿着宇航服，坐在月球表面，卡通风格，8K渲染
+
+示例输出：
+一只可爱的{{character_type::柴犬}}穿着{{clothing::宇航服}}，坐在{{background_scene::月球表面}}，卡通风格，8K渲染
+
+现在请标注以下提示词：`;
+  }, []);
+
+  // 调试模式：直接用前端提供的系统提示词执行拆分（不走后端）
+  const handleDebugSplitRun = React.useCallback(async ({ systemPrompt, apiKey, model, splitMode = 'classic' }) => {
+    if (!activeTemplate) return;
+    const rawPrompt = getLocalized(activeTemplate.content, templateLanguage);
+    if (!rawPrompt || rawPrompt.trim().length < 10) {
+      alert(language === 'cn' ? '提示词太短，无法执行拆分' : 'Prompt too short to split');
+      return;
+    }
+    await performSmartSplit(systemPrompt, model, apiKey, splitMode);
+  }, [activeTemplate, templateLanguage, language, performSmartSplit]);
 
   const handleGenerateAITerms = React.useCallback(async (params) => {
     console.log('[App] AI Generation Request:', params);
+
+    // 调试模式：读取 localStorage 中设置的词条调试模型
+    const debugTermsModel = localStorage.getItem('debug_terms_model');
+    const debugApiKey = localStorage.getItem('debug_zhipu_api_key');
 
     // 收集当前模板中已选择的所有变量值，用于 AI 上下文理解
     const selectedValues = {};
@@ -1125,7 +1559,8 @@ const App = () => {
     try {
       const result = await generateAITerms({
         ...params,
-        selectedValues  // 新增：传递用户已选择的变量值
+        selectedValues,
+        ...(debugTermsModel && { debugModel: debugTermsModel, debugApiKey }),
       });
       console.log('[App] AI Generation Result:', result);
       return result;
@@ -1446,7 +1881,11 @@ const App = () => {
     setTemplates(templateResult.templates);
     setBanks(bankResult.banks);
     setDefaults(bankResult.defaults);
-    setActiveTemplateId(prev => templateResult.templates.some(t => t.id === prev) ? prev : "tpl_photo_grid");
+    // 如果当前模板仍然存在则保持，否则选择最新的模板
+    setActiveTemplateId(prev => {
+      if (templateResult.templates.some(t => t.id === prev)) return prev;
+      return templateResult.templates[templateResult.templates.length - 1]?.id || "tpl_photo_grid";
+    });
     
     // 更新版本号，避免再次提示更新
     setLastAppliedDataVersion(SYSTEM_DATA_VERSION);
@@ -1458,6 +1897,30 @@ const App = () => {
       setNoticeMessage(t('refresh_done_no_conflict'));
     }
   }, [banks, defaults, templates, t]);
+
+  // 监听来自 RootLayout 的侧边栏导航事件
+  // （必须在 handleSetDiscoveryView 和 handleRefreshSystemData 定义之后）
+  useEffect(() => {
+    const onHome = () => handleSetDiscoveryView(true);
+    const onDetail = () => handleSetDiscoveryView(false);
+    const onRefresh = () => handleRefreshSystemData();
+    const onSetSortOrder = (e) => setSortOrder(e.detail);
+    const onSetRandomSeed = (e) => setRandomSeed(e.detail);
+
+    window.addEventListener('app-nav-home', onHome);
+    window.addEventListener('app-nav-detail', onDetail);
+    window.addEventListener('app-nav-refresh', onRefresh);
+    window.addEventListener('app-set-sort-order', onSetSortOrder);
+    window.addEventListener('app-set-random-seed', onSetRandomSeed);
+
+    return () => {
+      window.removeEventListener('app-nav-home', onHome);
+      window.removeEventListener('app-nav-detail', onDetail);
+      window.removeEventListener('app-nav-refresh', onRefresh);
+      window.removeEventListener('app-set-sort-order', onSetSortOrder);
+      window.removeEventListener('app-set-random-seed', onSetRandomSeed);
+    };
+  }, [handleSetDiscoveryView, handleRefreshSystemData]);
 
   const handleAutoUpdate = () => {
     handleRefreshSystemData();
@@ -1751,7 +2214,15 @@ const App = () => {
   const handleExportTemplate = async (template) => {
       try {
           const templateName = getLocalized(template.name, language);
-          const dataStr = JSON.stringify(template, null, 2);
+          // 导出前清理 selections 中的空值 / 空对象
+          const cleanedSelections = {};
+          Object.entries(template.selections || {}).forEach(([key, val]) => {
+            if (val === null || val === undefined) return;
+            if (typeof val === 'object' && Object.keys(val).length === 0) return;
+            cleanedSelections[key] = val;
+          });
+          const cleanedTemplate = { ...template, selections: cleanedSelections };
+          const dataStr = JSON.stringify(cleanedTemplate, null, 2);
           const dataBlob = new Blob([dataStr], { type: 'application/json' });
           const filename = `${templateName.replace(/\s+/g, '_')}_template.json`;
           
@@ -1769,7 +2240,7 @@ const App = () => {
                           title: templateName,
                           text: '导出的提示词模板'
                       });
-                      showToastMessage('✅ 模板已分享/保存');
+                      setNoticeMessage('✅ 模板已分享/保存');
                       return;
                   }
               } catch (shareError) {
@@ -1791,13 +2262,18 @@ const App = () => {
           document.body.appendChild(link);
           link.click();
           
+          // 立即显示成功提示（下载已触发）
+          setNoticeMessage('✅ 模板已导出');
+          
           // 延迟清理，确保iOS有足够时间处理
           setTimeout(() => {
-              document.body.removeChild(link);
+              try {
+                if (document.body.contains(link)) {
+                  document.body.removeChild(link);
+                }
+              } catch (_) {}
               URL.revokeObjectURL(url);
-          }, 100);
-          
-          showToastMessage('✅ 模板已导出');
+          }, 300);
       } catch (error) {
           console.error('导出失败:', error);
           alert('导出失败，请重试');
@@ -2270,7 +2746,7 @@ const App = () => {
     }
     
     let qrContentUrl = "https://aipromptfill.com"; // 默认官网地址
-    let qrBase64 = "/QRCode.png";
+    let qrBase64 = "/images/QRCode.png";
     
     try {
         const compressed = compressTemplate(activeTemplate, banks, categories);
@@ -2619,7 +3095,7 @@ const App = () => {
                         title: activeTemplateName,
                         text: '导出的提示词模板'
                     });
-                    showToastMessage('✅ 图片已分享，请选择"存储图像"保存到相册');
+                    setNoticeMessage('✅ 图片已分享，请选择"存储图像"保存到相册');
                 } else {
                     // 降级方案：对于iOS，打开新标签页显示图片
                     if (isIOS) {
@@ -2643,7 +3119,7 @@ const App = () => {
                                 </body>
                                 </html>
                             `);
-                            showToastMessage('✅ 请在新页面长按图片保存');
+                            setNoticeMessage('✅ 请在新页面长按图片保存');
                         } else {
                             // 如果无法打开新窗口，尝试下载
                             const link = document.createElement('a');
@@ -2653,7 +3129,7 @@ const App = () => {
                             document.body.appendChild(link);
                             link.click();
                             document.body.removeChild(link);
-                            showToastMessage('✅ 图片已导出，请在新页面保存');
+                            setNoticeMessage('✅ 图片已导出，请在新页面保存');
                         }
                     } else {
                         // 安卓等其他移动设备：触发下载
@@ -2663,7 +3139,7 @@ const App = () => {
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
-                        showToastMessage('✅ 图片已保存到下载文件夹');
+                        setNoticeMessage('✅ 图片已保存到下载文件夹');
                     }
                 }
             } catch (shareError) {
@@ -2683,7 +3159,7 @@ const App = () => {
                             </html>
                         `);
                     }
-                    showToastMessage('⚠️ 请在新页面长按图片保存');
+                    setNoticeMessage('⚠️ 请在新页面长按图片保存');
                 } else {
                     const link = document.createElement('a');
                     link.href = image;
@@ -2691,7 +3167,7 @@ const App = () => {
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
-                    showToastMessage('✅ 图片已保存');
+                    setNoticeMessage('✅ 图片已保存');
                 }
             }
         } else {
@@ -2702,11 +3178,11 @@ const App = () => {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            showToastMessage('✅ 图片导出成功！');
+            setNoticeMessage('✅ 图片导出成功！');
         }
     } catch (err) {
         console.error("Export failed:", err);
-        showToastMessage('❌ 导出失败，请重试');
+        setNoticeMessage('❌ 导出失败，请重试');
     } finally {
         // 清理临时容器
         const tempContainer = document.getElementById('export-container-temp');
@@ -2744,15 +3220,15 @@ const App = () => {
   // --- Renderers ---
 
   const globalContainerStyle = isDarkMode ? {
-    borderRadius: '16px',
+    borderRadius: '24px',
     border: '1px solid transparent',
-    backgroundImage: 'linear-gradient(180deg, #3B3B3B, #242120), linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%)',
+    backgroundImage: 'linear-gradient(180deg, #3B3B3B 0%, #242120 100%), linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%)',
     backgroundOrigin: 'border-box',
     backgroundClip: 'padding-box, border-box',
   } : {
-    borderRadius: '16px',
+    borderRadius: '24px',
     border: '1px solid transparent',
-    backgroundImage: 'linear-gradient(180deg, #FAF5F1, #F6EBE6), linear-gradient(180deg, #FFFFFF 0%, rgba(255, 255, 255, 0) 100%)',
+    backgroundImage: 'linear-gradient(180deg, #FAF5F1 0%, #F6EBE6 100%), linear-gradient(180deg, #FFFFFF 0%, rgba(255, 255, 255, 0) 100%)',
     backgroundOrigin: 'border-box',
     backgroundClip: 'padding-box, border-box',
   };
@@ -2769,86 +3245,7 @@ const App = () => {
   }
 
   return (
-    <div
-      className={`flex h-screen h-[100dvh] w-screen overflow-hidden p-0 md:p-4 ${isDarkMode ? 'dark-mode dark-gradient-bg' : 'mesh-gradient-bg'}`}
-      onTouchMove={(e) => touchDraggingVar && onTouchDragMove(e.touches[0].clientX, e.touches[0].clientY)}
-      onTouchEnd={(e) => touchDraggingVar && onTouchDragEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY)}
-    >
-      {/* 桌面端全局侧边栏 - 位置固定不动 */}
-      {!isMobileDevice && (
-        <>
-          <Sidebar
-            activeTab={isSettingPage ? 'settings' : (showDiscoveryOverlay ? 'home' : 'details')}
-            onHome={() => {
-              handleSetDiscoveryView(true);
-            }}
-            onDetail={() => {
-              handleSetDiscoveryView(false);
-            }}
-            isSortMenuOpen={isSortMenuOpen}
-            setIsSortMenuOpen={setIsSortMenuOpen}
-            sortOrder={sortOrder}
-            setSortOrder={setSortOrder}
-            setRandomSeed={setRandomSeed}
-            onRefresh={handleRefreshSystemData}
-            language={language}
-            setLanguage={setLanguage}
-            isDarkMode={isDarkMode}
-            themeMode={themeMode}
-            setThemeMode={setThemeMode}
-            t={t}
-          />
-          
-          {/* 趣味设计：暗号模式下拉灯效果 */}
-          <div 
-            className={`hidden md:block fixed top-0 left-[-24px] z-[500] pointer-events-none transition-all duration-700 ease-in-out ${
-              isDarkMode ? 'translate-y-0 opacity-100 delay-0' : '-translate-y-full opacity-0 delay-[300ms]'
-            }`}
-            style={{ width: '220px' }}
-          >
-            {/* 精准感应区：仅 32px 宽，处于灯体中心 */}
-            <div 
-              className="absolute left-[94px] top-0 h-full w-[32px] cursor-pointer pointer-events-auto z-10"
-              onClick={() => setIsLampOn(!isLampOn)}
-              onMouseMove={handleLampMouseMove}
-              onMouseLeave={() => {
-                setLampRotation(0);
-                setIsLampHovered(false);
-              }}
-            />
-            
-            <div 
-              style={{ 
-                transformOrigin: '50% 0',
-                transform: `rotate(${lampRotation}deg)`,
-                transition: isLampHovered ? 'transform 0.1s ease-out' : 'transform 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-              }}
-            >
-              <img src="/lamp.png" alt="Dark Mode Lamp" className={`w-full h-auto drop-shadow-2xl transition-all duration-500 ${!isLampOn ? 'brightness-50' : 'brightness-100'}`} />
-            </div>
-          </div>
-
-          {/* 趣味设计：光照效果 */}
-          <div 
-            className={`hidden md:block fixed pointer-events-none transition-opacity ease-in-out ${
-              isDarkMode 
-                ? (isLampOn ? 'opacity-[0.28] duration-500 delay-[900ms]' : 'opacity-[0.05] duration-500 delay-0') 
-                : 'opacity-0 duration-300 delay-0'
-            }`}
-            style={{
-              left: '-286px',
-              top: '58px',
-              width: '815px',
-              height: '731px',
-              background: 'linear-gradient(180deg, #FFD09D 5%, rgba(216, 216, 216, 0) 100%)',
-              filter: 'blur(286px)',
-              mixBlendMode: 'lighten',
-              zIndex: 499
-            }}
-          />
-        </>
-      )}
-
+    <>
       {/* 移动端拖拽浮层 */}
       {touchDraggingVar && (
         <div 
@@ -2865,7 +3262,11 @@ const App = () => {
       )}
       
       {/* 主视图区域 */}
-      <div className="flex-1 relative flex overflow-hidden">
+      <div
+        className="flex-1 h-full relative flex overflow-hidden"
+        onTouchMove={(e) => touchDraggingVar && onTouchDragMove(e.touches[0].clientX, e.touches[0].clientY)}
+        onTouchEnd={(e) => touchDraggingVar && onTouchDragEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY)}
+      >
         {isSettingPage || (isMobileDevice && mobileTab === 'settings') ? (
           isMobileDevice ? (
             <MobileSettingsView
@@ -2954,9 +3355,10 @@ const App = () => {
             handleAddTemplate={handleAddTemplate}
             TEMPLATE_TAGS={TEMPLATE_TAGS}
             availableTags={availableTags}
+            appVersion={APP_VERSION}
           />
         ) : (
-          <div className="flex-1 flex gap-2 lg:gap-4 overflow-hidden">
+          <div className="flex-1 h-full flex gap-2 lg:gap-4 overflow-hidden">
             {/* Tag Sidebar - 仅在桌面端显示 */}
             {!isMobileDevice && (
               <TagSidebar
@@ -3106,7 +3508,13 @@ const App = () => {
               // AI 相关
               onGenerateAITerms={handleGenerateAITerms}
               onSmartSplitClick={handleSmartSplit}
+              onDebugSplitRun={handleDebugSplitRun}
+              getDebugSystemPrompt={getDebugSystemPrompt}
+              getDebugSystemPromptLite={getDebugSystemPromptLite}
               isSmartSplitLoading={isSmartSplitLoading}
+              splitSnapshot={splitSnapshot?.templateId === activeTemplateId ? splitSnapshot : null}
+              splitDurationMs={splitSnapshot?.templateId === activeTemplateId ? (splitSnapshot?.splitDurationMs ?? null) : null}
+              onResetClick={() => setIsSplitResetModalOpen(true)}
               updateTemplateProperty={updateTemplateProperty}
               setIsTemplatesDrawerOpen={setIsTemplatesDrawerOpen}
               setIsBanksDrawerOpen={setIsBanksDrawerOpen}
@@ -3115,7 +3523,7 @@ const App = () => {
             {/* Image/Video URL Input Modal - 保持在 TemplateEditor 外部 */}
             {showImageUrlInput && (
               <div
-                className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300"
+                className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-md flex items-center justify-center p-4"
                 onClick={() => { setShowImageUrlInput(false); setImageUrlInput(""); }}
               >
                 <div
@@ -3224,6 +3632,7 @@ const App = () => {
         onClose={() => setShowShareOptionsModal(false)}
         onCopyLink={doCopyShareLink}
         onCopyToken={handleShareToken}
+        onCopyRawData={doCopyRawData}
         shareUrl={currentShareUrl}
         shareCode={prefetchedShortCode}
         isGenerating={isGenerating}
@@ -3300,6 +3709,19 @@ const App = () => {
         isDarkMode={isDarkMode}
       />
 
+      {/* --- Split Reset Modal (拆分前后对比 / 还原) --- */}
+      <SplitResetModal
+        isOpen={isSplitResetModalOpen}
+        onClose={() => setIsSplitResetModalOpen(false)}
+        onRestore={handleRestoreFromSnapshot}
+        snapshot={splitSnapshot?.templateId === activeTemplateId ? splitSnapshot : null}
+        currentContent={activeTemplate?.content}
+        language={language}
+        templateLanguage={templateLanguage}
+        isDarkMode={isDarkMode}
+        banks={banks}
+      />
+
       {/* --- Delete Template Confirm Modal --- */}
       <ConfirmModal
         isOpen={isDeleteTemplateConfirmOpen}
@@ -3349,7 +3771,7 @@ const App = () => {
       {/* --- Notice Modal --- */}
       {noticeMessage && (
         <div
-          className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300"
+          className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setNoticeMessage(null)}
         >
           <div
@@ -3387,7 +3809,7 @@ const App = () => {
 
       {/* --- Share Import Loading --- */}
       {isImportingShare && (
-        <div className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className={`w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border ${isDarkMode ? 'bg-[#1C1917] border-white/10' : 'bg-white border-gray-100'}`}>
             <div className="p-8 flex flex-col items-center gap-4">
               <div className="w-10 h-10 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
@@ -3405,7 +3827,7 @@ const App = () => {
       {/* --- Export Templates Modal --- */}
       {isExportModalOpen && (
         <div
-          className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300"
+          className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setIsExportModalOpen(false)}
         >
           <div
@@ -3582,7 +4004,7 @@ const App = () => {
         className="hidden" 
         accept="image/*,video/*" 
       />
-    </div>
+    </>
   );
 };
 

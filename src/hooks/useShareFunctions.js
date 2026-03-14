@@ -268,7 +268,9 @@ export const useShareFunctions = (
     // 如果是短码，去服务器换取完整数据
     if (shareData.length <= 15) {
       try {
-        shareData = await fetchShareByCode(shareData);
+        // 新格式分享码为6位全大写，兼容用户小写输入；旧格式8位混合大小写保持原样
+        const normalizedCode = /^[A-Za-z0-9]{6}$/.test(shareData) ? shareData.toUpperCase() : shareData;
+        shareData = await fetchShareByCode(normalizedCode);
       } catch (e) {
         console.error("Short code import fetch failed:", e);
         setShareImportError(
@@ -588,6 +590,29 @@ export const useShareFunctions = (
     }
   }, [activeTemplate, language, getShortCodeFromServer, banks, categories, templates, prefetchedShortCode]);
 
+  /**
+   * 复制原始 JSON 数据 (仅限本地开发使用)
+   */
+  const doCopyRawData = useCallback(async () => {
+    if (!activeTemplate) return;
+    try {
+      const cleanedSelections = {};
+      Object.entries(activeTemplate.selections || {}).forEach(([key, val]) => {
+        if (val === null || val === undefined) return;
+        if (typeof val === 'object' && Object.keys(val).length === 0) return;
+        cleanedSelections[key] = val;
+      });
+      const cleanedTemplate = { ...activeTemplate, selections: cleanedSelections };
+      const dataStr = JSON.stringify(cleanedTemplate, null, 2);
+      const success = await copyToClipboard(dataStr);
+      if (success) {
+        alert(language === 'cn' ? '✅ 完整 JSON 数据已复制' : '✅ Full JSON data copied');
+      }
+    } catch (err) {
+      console.error('Copy raw data failed:', err);
+    }
+  }, [activeTemplate, language]);
+
   // 计算分享 URL（优先显示短码链接，失败则显示长链接作为兜底）
   const currentShareUrl = useMemo(() => {
     if (!activeTemplate) return null;
@@ -639,5 +664,6 @@ export const useShareFunctions = (
     isImportingShare,
     shortCodeError,
     setShortCodeError,
+    doCopyRawData,
   };
 };

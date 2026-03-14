@@ -77,7 +77,7 @@ export const LinkTemplateModal = React.memo(({
 
   return (
     <div
-      className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300"
+      className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-md flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div

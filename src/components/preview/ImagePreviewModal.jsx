@@ -44,12 +44,12 @@ const ImagePreviewModal = React.memo(({
 
   // 根据 zoomedImage 找到对应的模板（支持 imageUrl、imageUrls、videoUrl 匹配）
   const template = React.useMemo(() => {
-    if (!templates) return null;
+    if (!templates || templates.length === 0) return null;
     return templates.find(t =>
       t.imageUrl === zoomedImage ||
       (t.imageUrls && t.imageUrls.includes(zoomedImage)) ||
       t.videoUrl === zoomedImage
-    ) || templates[0];
+    ) || templates[templates.length - 1]; // 回退到最新的模板
   }, [zoomedImage, templates]);
 
   const [modalMousePos, setModalMousePos] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
@@ -163,7 +163,7 @@ const ImagePreviewModal = React.memo(({
   if (isMobile) {
     return (
       <div
-          className="fixed inset-0 z-[200] flex flex-col animate-in fade-in duration-500 overflow-hidden"
+          className="fixed inset-0 z-[200] flex flex-col overflow-hidden"
           onClick={() => setZoomedImage(null)}
       >
           {/* Background Layer */}
@@ -278,8 +278,8 @@ const ImagePreviewModal = React.memo(({
                           {getLocalized(template?.name, language)}
                         </h2>
                         {template?.author && (
-                          <div className="mb-1.5 opacity-60">
-                            <span className={`text-[10px] font-medium truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{template.author}</span>
+                          <div className="mb-1.5 opacity-90">
+                            <span className={`text-[10px] font-bold truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-600/90'}`}>{template.author}</span>
                           </div>
                         )}
                         <div className="flex flex-wrap gap-1.5">
@@ -339,7 +339,7 @@ const ImagePreviewModal = React.memo(({
 
   return (
     <div
-        className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-500 overflow-hidden"
+        className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-10 overflow-hidden"
         onMouseMove={(e) => !isMobile && setModalMousePos({ x: e.clientX, y: e.clientY })}
         onClick={() => setZoomedImage(null)}
     >
@@ -455,8 +455,8 @@ const ImagePreviewModal = React.memo(({
                                 {getLocalized(template.name, language)}
                             </h2>
                             {template.author && (
-                              <div className="mb-4 opacity-70">
-                                <span className="text-sm font-bold text-white/90 tracking-wide">{template.author}</span>
+                              <div className="mb-4 opacity-90">
+                                <span className="text-sm font-bold text-white tracking-wide">{template.author}</span>
                               </div>
                             )}
                             <div className="flex flex-wrap gap-2 opacity-80">

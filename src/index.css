@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  background: linear-gradient(180deg, #D6D6D6 0%, #DFDFDF 100%);
+  background: linear-gradient(180deg, #F4ECE4 69%, #F7DED1 100%);
   background-attachment: fixed;
   margin: 0;
   min-height: 100vh;
@@ -124,11 +124,14 @@ body {
 .premium-search-container {
   position: relative;
   width: 100%;
+  height: 42px;
   border-radius: 16px;
   box-sizing: border-box;
   border: 1px solid transparent;
   transition: all 0.3s ease;
   overflow: hidden;
+  display: flex;
+  align-items: center;
 }
 
 .premium-search-container.light {
@@ -145,7 +148,8 @@ body {
 
 .premium-search-input {
   width: 100%;
-  padding: 12px 16px 12px 44px;
+  height: 100%;
+  padding: 0 16px 0 44px;
   background: transparent;
   border: none;
   outline: none;
@@ -331,9 +335,9 @@ body {
   will-change: transform;
 }
 
-/* 全局最底层背景色 */
+/* 全局最底层背景色（浅色模式） */
 .mesh-gradient-bg {
-  background: linear-gradient(180deg, #D6D6D6 0%, #DFDFDF 100%);
+  background: linear-gradient(180deg, #F4ECE4 69%, #F7DED1 100%);
   background-attachment: fixed;
 }
 

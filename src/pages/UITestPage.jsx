@@ -16,6 +16,21 @@ if (!document.getElementById(STYLE_TAG_ID)) {
   style.textContent = `
     @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&display=swap');
 
+    @font-face {
+      font-family: 'VonwaonBitmap 12px';
+      src: url('/VonwaonBitmap-16px.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'VonwaonBitmap';
+      src: url('/VonwaonBitmap-16px.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
     @keyframes cassette-spin {
       from { transform: rotate(0deg); }
       to   { transform: rotate(360deg); }
@@ -615,6 +630,217 @@ function SectionTitle({ isDarkMode, index, title }) {
   );
 }
 
+// ─── 电视控件 ─────────────────────────────────────────────────────────────────
+//
+// SVG 均为 900×720 同框，三层用 position:absolute inset:0 叠加
+// tv-body：需横向拉伸 → <object> 方案使 preserveAspectRatio="none" 生效
+// tv-logo：同框，Logo 路径在 y≈690 水平居中，整层叠加即可，不单独定位
+// tv-spot：同框，灯在右下 (858,689)，整层叠加即可
+//          灯色 #D68468 写死在 SVG，如需动态改色改用内联 SVG
+//
+// 标准坐标模式：
+// 电视设计基准 = 900 × 720
+// 文本框设计稿坐标 = x:50, y:55, w:800, h:540
+const TV_BASE_W = 900;
+const TV_BASE_H = 720;
+const TV_TEXT_X = 50;
+const TV_TEXT_Y = 55;
+const TV_TEXT_WIDTH = 800;
+const TV_TEXT_HEIGHT = 540;
+
+// 占位文本内容
+const DEMO_TEXT = `(00:00 - 00:04) Opening
+  · Scene: Inside an ancient tavern, candlelight flickering
+  · Characters: Describe the appearance and state of the characters here
+  · Event: Describe the opening event here
+  · Dialogue: (None / Fill in character lines here)
+  · Shot: Epic Ultra Wide Aerial Shot
+  · Camera Movement: Fast-cut montage (multi-angle quick cuts)
+
+(00:04 - 00:08) Development
+  · Scene: Transition from the previous scene, describe the scene changes here
+  · Characters: Describe the characters' actions and expressions here
+  · Event: Describe the key event advancing the plot here
+  · Dialogue: (None / Fill in character lines here)
+  · Shot: Wide Angle Tracking Shot with strong depth of field
+  · Camera Movement: Fast-cut montage (multi-angle quick cuts)
+
+(00:08 - 00:12) Climax
+  · Scene: Describe the atmosphere of the climax scene here
+  · Characters: Describe the characters' intense actions or emotional outbursts here
+  · Event: Describe the most impactful core event here`;
+
+function TVWidget({ mode = 'light', widthPercent = 78 }) {
+  const isLight = mode === 'light';
+
+  return (
+    <div style={{
+      width: `${widthPercent}%`,
+      maxWidth: '100%',
+      margin: '0 auto',
+      position: 'relative',
+      overflow: 'hidden',
+      aspectRatio: `${TV_BASE_W} / ${TV_BASE_H}`,
+    }}>
+      {/* ── z:0 电视体 SVG ── */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          backgroundImage: `url(/assets/tv/tv-body-${mode}.svg)`,
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          backgroundSize: '100% 100%',
+        }}
+      />
+
+      {/* 关键修正：
+          文本框不再靠“目测百分比”定位，而是直接使用设计稿坐标
+          (50,55,800,540) 基于 900×720 换算成百分比。
+          只要电视整体保持同一基准比例缩放，文本一定与屏幕对齐。 */}
+      <div style={{
+        position: 'absolute',
+        top: `${(TV_TEXT_Y / TV_BASE_H) * 100}%`,
+        left: `${(TV_TEXT_X / TV_BASE_W) * 100}%`,
+        width: `${(TV_TEXT_WIDTH / TV_BASE_W) * 100}%`,
+        height: `${(TV_TEXT_HEIGHT / TV_BASE_H) * 100}%`,
+        zIndex: 1,
+        overflow: 'hidden',
+        mixBlendMode: 'multiply',
+      }}>
+        <div style={{
+          fontFamily: "'VonwaonBitmap 12px', 'VonwaonBitmap', monospace",
+          fontSize: 18,
+          fontWeight: 'normal',
+          lineHeight: '120%',
+          letterSpacing: 0,
+          color: '#272727',
+          whiteSpace: 'pre-wrap',
+          overflowY: 'auto',
+          height: '100%',
+          width: '100%',
+          padding: '0',
+          boxSizing: 'border-box',
+        }}>
+          {DEMO_TEXT}
+        </div>
+      </div>
+
+      {/* ── z:2 Logo SVG（同框，电视体之上，文字之上） ── */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 2,
+          pointerEvents: 'none',
+          backgroundImage: `url(/assets/tv/tv-logo-${mode}.svg)`,
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          backgroundSize: '100% 100%',
+        }}
+      />
+
+      {/* ── z:2 Spot SVG（同框） ── */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 2,
+          pointerEvents: 'none',
+          backgroundImage: `url(/assets/tv/tv-spot-${mode}.svg)`,
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          backgroundSize: '100% 100%',
+        }}
+      />
+    </div>
+  );
+}
+
+// ── 电视调试面板（Section 04 用） ─────────────────────────────────────────────
+function TVDebugPanel({ isDarkMode }) {
+  const [mode, setMode] = useState('light');
+  const [widthPercent, setWidthPercent] = useState(78);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+      {/* 控制栏 */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+        padding: '10px 14px',
+        borderRadius: 8,
+        background: isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+        border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
+      }}>
+        {/* Dark / Light 切换 */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          {['light', 'dark'].map(m => (
+            <button key={m} onClick={() => setMode(m)} style={{
+              padding: '3px 12px', borderRadius: 5, cursor: 'pointer',
+              border: `1px solid ${mode === m ? '#FB923C' : (isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)')}`,
+              background: mode === m ? 'rgba(251,146,60,0.15)' : 'transparent',
+              color: mode === m ? '#FB923C' : (isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)'),
+              fontSize: 11, fontFamily: 'monospace', transition: 'all 0.15s',
+            }}>
+              {m.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 10, fontFamily: 'monospace', color: isDarkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)' }}>
+            WIDTH
+          </span>
+          <input
+            type="range" min={45} max={100} step={1} value={widthPercent}
+            onChange={e => setWidthPercent(Number(e.target.value))}
+            style={{ width: 100, accentColor: '#FB923C' }}
+          />
+          <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#FB923C', minWidth: 36 }}>
+            {widthPercent}%
+          </span>
+        </div>
+
+        {/* SVG 接入状态提示 */}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
+          {[
+            ['body',  false],
+            ['logo',  false],
+            ['spot',  false],
+          ].map(([name, ready]) => (
+            <span key={name} style={{
+              fontSize: 9, fontFamily: 'monospace', padding: '2px 6px', borderRadius: 4,
+              background: ready ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${ready ? 'rgba(74,222,128,0.3)' : 'rgba(255,255,255,0.08)'}`,
+              color: ready ? '#4ADE80' : (isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'),
+            }}>
+              {name} {ready ? '✓' : '·'}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* 电视本体（外层给一个中性衬底，避免透明时露出页面背景色） */}
+      <div style={{
+        background: mode === 'light' ? '#e8e4da' : '#1a1a14',
+        borderRadius: 20,
+        padding: 0,
+        overflow: 'hidden',
+      }}>
+        <TVWidget mode={mode} widthPercent={widthPercent} />
+      </div>
+
+      {/* 接入说明 */}
+      <p style={{ margin: 0, fontSize: 10, fontFamily: 'monospace', color: isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)', lineHeight: 1.8 }}>
+        // 标准坐标模式：TV = 900×720，TextBox = x50 / y55 / w800 / h540<br />
+        // 当前 UI Test 只调电视整体宽度，内部元素按同一比例同步缩放
+      </p>
+    </div>
+  );
+}
+
 // ─── 主页面 ───────────────────────────────────────────────────────────────────
 export default function UITestPage({ isDarkMode = true }) {
   const bg = isDarkMode ? '#141414' : '#f5f5f0';
@@ -626,7 +852,7 @@ export default function UITestPage({ isDarkMode = true }) {
       <div style={{ marginBottom: 28, paddingBottom: 16, borderBottom: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>🧪 UI Test Page</h1>
-          <p style={{ margin: '3px 0 0', fontSize: 12, color: textMuted }}>录像带控件 · 拟物化组件测试环境</p>
+          <p style={{ margin: '3px 0 0', fontSize: 12, color: textMuted }}>拟物化组件测试环境</p>
         </div>
         <span style={{ padding: '3px 10px', borderRadius: 20, background: 'rgba(251,146,60,0.12)', border: '1px solid rgba(251,146,60,0.25)', fontSize: 10, color: '#FB923C', fontFamily: 'monospace' }}>
           DEV ONLY
@@ -635,18 +861,23 @@ export default function UITestPage({ isDarkMode = true }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
         <section>
-          <SectionTitle isDarkMode={isDarkMode} index="01" title="单体预览 · 四种状态" />
+          <SectionTitle isDarkMode={isDarkMode} index="01" title="录像带 · 单体状态预览" />
           <StatusPreviewPanel isDarkMode={isDarkMode} />
         </section>
 
         <section>
-          <SectionTitle isDarkMode={isDarkMode} index="02" title="中央面板完整布局 · 点击录像带横向展开内容区" />
+          <SectionTitle isDarkMode={isDarkMode} index="02" title="录像带 · 中央面板完整布局" />
           <CenterPanelMock isDarkMode={isDarkMode} />
         </section>
 
         <section>
-          <SectionTitle isDarkMode={isDarkMode} index="03" title="SVG 分层对齐沙盒（待接入）" />
+          <SectionTitle isDarkMode={isDarkMode} index="03" title="录像带 · SVG 分层对齐沙盒（待接入）" />
           <SVGSandbox isDarkMode={isDarkMode} />
+        </section>
+
+        <section>
+          <SectionTitle isDarkMode={isDarkMode} index="04" title="电视控件 · 实机调试（SVG 待接入）" />
+          <TVDebugPanel isDarkMode={isDarkMode} />
         </section>
       </div>
     </div>

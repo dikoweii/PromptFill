@@ -563,7 +563,7 @@ export const MobileSettingsView = ({
       {/* WeChat QR Popover (Mobile Style) */}
       {showWechatQR && (
         <div 
-          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 px-6"
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-sm px-6"
           onClick={() => setShowWechatQR(false)}
         >
           <div 
@@ -579,7 +579,7 @@ export const MobileSettingsView = ({
             <div className="flex flex-col items-center">
               <div className={`w-56 h-56 ${isDarkMode ? 'bg-black' : 'bg-gray-50'} rounded-3xl overflow-hidden mb-6 border ${isDarkMode ? 'border-white/5' : 'border-gray-100'} p-3 shadow-inner`}>
                 <img 
-                  src="/Wechat.jpg" 
+                  src="/images/Wechat.jpg" 
                   alt="WeChat QR Code" 
                   className="w-full h-full object-contain rounded-2xl"
                 />
@@ -594,7 +594,7 @@ export const MobileSettingsView = ({
       {/* Credits Popover (Mobile Style) */}
       {showCredits && (
         <div 
-          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 px-6"
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-sm px-6"
           onClick={() => setShowCredits(false)}
         >
           <div 

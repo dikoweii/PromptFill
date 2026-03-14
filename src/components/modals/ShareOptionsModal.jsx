@@ -18,14 +18,15 @@ import { WaypointsIcon } from '../icons/WaypointsIcon';
  * @param {string} props.language - 当前语言
  * @param {string} props.shareCode - 分享码
  */
-const ShareOptionsModal = ({ isOpen, onClose, onCopyLink, onCopyToken, shareUrl, shareCode, isGenerating, isPrefetching, isDarkMode, language, shortCodeError }) => {
+const ShareOptionsModal = ({ isOpen, onClose, onCopyLink, onCopyToken, onCopyRawData, shareUrl, shareCode, isGenerating, isPrefetching, isDarkMode, language, shortCodeError }) => {
   if (!isOpen) return null;
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
   return (
     <div
-      className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300"
+      className="fixed inset-0 z-[1000] bg-black/40 backdrop-blur-md flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
@@ -89,6 +90,25 @@ const ShareOptionsModal = ({ isOpen, onClose, onCopyLink, onCopyToken, shareUrl,
                 </span>
               </div>
             </PremiumButton>
+
+            {isLocalhost && (
+              <PremiumButton
+                onClick={onCopyRawData}
+                isDarkMode={isDarkMode}
+                className="w-full size-lg"
+                icon={CopyIcon}
+                justify="start"
+              >
+                <div className="flex flex-col items-start ml-2 text-left">
+                  <span className="text-sm font-black">
+                    {language === 'cn' ? '复制完整数据 (本地调试)' : 'Copy Full Data (Local)'}
+                  </span>
+                  <span className={`text-[10px] font-bold opacity-50`}>
+                    {language === 'cn' ? '直接复制模版 JSON 数据' : 'Copy raw template JSON data'}
+                  </span>
+                </div>
+              </PremiumButton>
+            )}
 
             {/* 暂时注释口令分享按钮
             <PremiumButton

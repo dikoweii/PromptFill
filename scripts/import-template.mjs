@@ -3,12 +3,16 @@
  * 模板导入工具
  * 
  * 用法：
- *   1. 在 App 中创建模板，点击分享获取链接
- *   2. 运行: npm run import
- *   3. 粘贴分享链接或 JSON 数据
- *   4. 脚本自动写入 templates.js 和 banks.js
+ *   方式1（推荐）：直接指定 JSON 文件路径
+ *     npm run import -- path/to/template.json
+ *     npm run import -- ~/Downloads/地铁玩偶装扮_template.json
+ * 
+ *   方式2：交互式粘贴
+ *     npm run import
+ *     然后粘贴分享链接或 JSON 数据
  * 
  * 支持的输入格式：
+ *   - JSON 文件路径（推荐，避免终端粘贴截断问题）
  *   - 分享链接 (https://...#/share?share=xxxxx)
  *   - 短码 (如: ABC123)
  *   - 口令格式 (#pf$xxxxx$)
@@ -77,8 +81,8 @@ function decompressTemplate(compressedBase64) {
     const jsonStr = Buffer.from(decompressed).toString('utf8');
     const data = JSON.parse(jsonStr);
 
-    // 映射回原始键名
-    return {
+  // 映射回原始键名
+    const result = {
       name: data.n || data.name,
       content: data.c || data.content,
       tags: data.t || data.tags || [],
@@ -93,9 +97,61 @@ function decompressTemplate(compressedBase64) {
       categories: data.cat || data.categories || {},
       linkedTemplates: data.lt || data.linkedTemplates || [],
     };
+
+    // 清理 selections 中的无效数据（空对象、null 等）
+    if (result.selections && typeof result.selections === 'object') {
+      Object.keys(result.selections).forEach(key => {
+        const val = result.selections[key];
+        if (val === null || val === undefined) {
+          delete result.selections[key];
+        } else if (typeof val === 'object' && Object.keys(val).length === 0) {
+          delete result.selections[key];
+        }
+      });
+    }
+
+    return result;
   } catch (e) {
     console.error('Decompress error:', e.message);
     return null;
+  }
+}
+
+/**
+ * 尝试修复常见的 JSON 格式错误并解析
+ * 
+ * 典型的损坏场景：selections 中有运行时 key（如 "character_type-0": {），
+ * 其值为不完整对象，导致大括号层级错乱。
+ * 修复策略：先删除带 -N 后缀的 key 行及其不完整值，再尝试解析。
+ */
+function tryRepairAndParseJson(str) {
+  try {
+    return JSON.parse(str);
+  } catch (originalError) {
+    log.warn('JSON 标准解析失败，尝试自动修复...');
+    let fixed = str;
+
+    // 修复1：删除带 -数字 后缀的 key 及其值（这些是运行时 uniqueKey，不应出现在导出中）
+    // 匹配模式："someKey-0": { ... } 或 "someKey-0": "..." 等各种值形式
+    // 最常见的损坏是：值为 { 后未正确闭合（少了一层 }）
+    fixed = fixed.replace(/,?\s*"[^"]*-\d+"\s*:\s*\{[^{}]*\}/g, '');
+    // 也处理值为 { 后直接换行的（不完整对象，{ 后面没内容到下一个 } ）
+    fixed = fixed.replace(/,?\s*"[^"]*-\d+"\s*:\s*\{\s*\n/g, '\n');
+
+    // 修复2：修复尾随逗号
+    fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+    // 修复3：修复开头逗号（删除 key 后可能留下的）
+    fixed = fixed.replace(/\{\s*,/g, '{');
+
+    try {
+      const result = JSON.parse(fixed);
+      log.success('JSON 自动修复成功');
+      return result;
+    } catch (e2) {
+      log.error('JSON 解析失败（自动修复无效）: ' + originalError.message);
+      log.info('提示：请检查 JSON 中是否有不完整的对象（如 "key": { 后缺少闭合 }）');
+      return null;
+    }
   }
 }
 
@@ -105,13 +161,13 @@ function decompressTemplate(compressedBase64) {
 function extractShareData(input) {
   let shareData = input.trim();
 
-  // 尝试直接解析为 JSON
-  try {
-    const parsed = JSON.parse(shareData);
-    if (parsed.name || parsed.n || parsed.content || parsed.c) {
+  // 尝试直接解析为 JSON（含自动修复）
+  if (shareData.startsWith('{')) {
+    const parsed = tryRepairAndParseJson(shareData);
+    if (parsed && (parsed.name || parsed.n || parsed.content || parsed.c)) {
       return parsed;
     }
-  } catch (e) {}
+  }
 
   // 识别口令格式 #pf$token$
   if (shareData.includes('#pf$') && shareData.includes('$')) {
@@ -228,7 +284,7 @@ function generateTemplateContentCode(constName, content) {
 }
 
 /**
- * 生成 INITIAL_TEMPLATES 数组项代码
+ * 生成 INITIAL_TEMPLATES_CONFIG 数组项代码
  */
 function generateTemplateEntryCode(templateId, constName, data) {
   const lines = [];
@@ -250,6 +306,9 @@ function generateTemplateEntryCode(templateId, constName, data) {
     lines.push(`    imageUrl: ${JSON.stringify(data.imageUrl)},`);
   }
   
+  // author
+  lines.push(`    author: ${JSON.stringify(data.author || "@tanshilong")},`);
+
   // type (如果是视频模板)
   if (data.type && data.type !== 'image') {
     lines.push(`    type: ${JSON.stringify(data.type)},`);
@@ -276,13 +335,15 @@ function generateTemplateEntryCode(templateId, constName, data) {
   lines.push(`    tags: ${JSON.stringify(data.tags || [])},`);
   
   // language
-  if (data.language) {
-    if (Array.isArray(data.language)) {
-      lines.push(`    language: ${JSON.stringify(data.language)}`);
-    } else {
-      lines.push(`    language: ${JSON.stringify(data.language)}`);
-    }
+  lines.push(`    language: ${JSON.stringify(data.language || ["cn", "en"])},`);
+
+  // bestModel
+  if (data.bestModel) {
+    lines.push(`    bestModel: ${JSON.stringify(data.bestModel)},`);
   }
+
+  // baseImage
+  lines.push(`    baseImage: ${JSON.stringify(data.baseImage || "no_base_image")}`);
   
   lines.push(`  }`);
   return lines.join('\n');
@@ -331,20 +392,20 @@ function writeTemplate(data) {
   const constName = generateConstName(data.name);
   const templateId = generateTemplateId(data.name);
   
-  // 1. 在 INITIAL_TEMPLATES 之前插入内容常量
+  // 1. 在 INITIAL_TEMPLATES_CONFIG 之前插入内容常量
   const templateConstCode = generateTemplateContentCode(constName, data.content);
   
-  // 找到 INITIAL_TEMPLATES 的位置
-  const initialTemplatesMatch = content.match(/export const INITIAL_TEMPLATES\s*=\s*\[/);
+  // 找到 INITIAL_TEMPLATES_CONFIG 的位置
+  const initialTemplatesMatch = content.match(/export const INITIAL_TEMPLATES_CONFIG\s*=\s*\[/);
   if (!initialTemplatesMatch) {
-    log.error('找不到 INITIAL_TEMPLATES，请检查 templates.js 格式');
+    log.error('找不到 INITIAL_TEMPLATES_CONFIG，请检查 templates.js 格式');
     return null;
   }
   
   const insertPos = initialTemplatesMatch.index;
   content = content.slice(0, insertPos) + templateConstCode + '\n' + content.slice(insertPos);
   
-  // 2. 在 INITIAL_TEMPLATES 数组末尾插入模板配置
+  // 2. 在 INITIAL_TEMPLATES_CONFIG 数组末尾插入模板配置
   const templateEntryCode = generateTemplateEntryCode(templateId, constName, data);
   
   // 找到数组的最后一个 } 和 ];
@@ -356,7 +417,7 @@ function writeTemplate(data) {
     const afterEnd = content.slice(match.index + match[1].length);
     content = beforeEnd + ',\n' + templateEntryCode + '\n' + afterEnd;
   } else {
-    log.error('无法找到 INITIAL_TEMPLATES 数组结尾');
+    log.error('无法找到 INITIAL_TEMPLATES_CONFIG 数组结尾');
     return null;
   }
   
@@ -422,27 +483,42 @@ function writeBanks(banks) {
 async function main() {
   log.title('📦 Prompt Fill 模板导入工具');
   
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-  
-  console.log('请粘贴分享链接、口令或 JSON 数据（支持多行，输入空行结束）:\n');
-  
   let input = '';
-  let emptyLineCount = 0;
-  
-  for await (const line of rl) {
-    if (line.trim() === '') {
-      emptyLineCount++;
-      if (emptyLineCount >= 1 && input.trim()) break;
-    } else {
-      emptyLineCount = 0;
-      input += line + '\n';
+
+  // 方式1：命令行参数指定文件路径
+  const fileArg = process.argv[2];
+  if (fileArg) {
+    const filePath = path.resolve(fileArg);
+    if (!fs.existsSync(filePath)) {
+      log.error(`文件不存在: ${filePath}`);
+      process.exit(1);
     }
+    log.info(`从文件读取: ${filePath}`);
+    input = fs.readFileSync(filePath, 'utf8');
+  } else {
+    // 方式2：交互式粘贴
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    
+    console.log('请粘贴分享链接、口令或 JSON 数据（支持多行，输入空行结束）:');
+    console.log(`${colors.yellow}提示: 推荐使用文件路径方式避免粘贴截断: npm run import -- path/to/file.json${colors.reset}\n`);
+    
+    let emptyLineCount = 0;
+    
+    for await (const line of rl) {
+      if (line.trim() === '') {
+        emptyLineCount++;
+        if (emptyLineCount >= 1 && input.trim()) break;
+      } else {
+        emptyLineCount = 0;
+        input += line + '\n';
+      }
+    }
+    
+    rl.close();
   }
-  
-  rl.close();
   
   if (!input.trim()) {
     log.error('未输入任何数据');
@@ -478,6 +554,7 @@ async function main() {
   writeBanks(data.banks);
   
   // 更新版本号
+  /*
   log.info('更新版本号...');
   const templateContent = fs.readFileSync(TEMPLATES_FILE, 'utf8');
   const versionMatch = templateContent.match(/SYSTEM_DATA_VERSION\s*=\s*"([^"]+)"/);
@@ -491,6 +568,7 @@ async function main() {
     );
     log.success(`版本号更新: ${versionMatch[1]} → ${newVersion}`);
   }
+  */
   
   log.title('✅ 导入完成！');
   console.log(`模板 ID: ${result.templateId}`);

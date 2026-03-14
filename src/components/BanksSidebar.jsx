@@ -667,7 +667,7 @@ export const BanksSidebar = React.memo(({
       {/* Mobile Overlay */}
       {isMobile && isBanksDrawerOpen && (
         <div 
-          className="fixed inset-0 bg-black/10 backdrop-blur-[2px] z-[290] animate-in fade-in duration-300"
+          className="fixed inset-0 bg-black/10 backdrop-blur-[2px] z-[290]"
           onClick={() => setIsBanksDrawerOpen(false)}
         />
       )}
@@ -693,13 +693,11 @@ export const BanksSidebar = React.memo(({
               <div className={`h-12 w-1.5 rounded-full transition-all duration-300 shadow-sm group-hover:shadow-lg group-hover:shadow-orange-400/30 ${isDarkMode ? 'bg-white/5 group-hover:bg-gradient-to-b group-hover:from-orange-400 group-hover:to-orange-500' : 'bg-gray-300/60 group-hover:bg-gradient-to-b group-hover:from-orange-400 group-hover:to-orange-500'}`}></div>
           </div>
 
-      <div className={`px-6 pt-4 pb-4 sticky top-0 z-30 border-b ${isDarkMode ? 'border-white/5' : 'border-white/30'}`}>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex flex-col items-start gap-1">
-              <h1 className="font-black tracking-tight text-[22px] text-orange-500 flex items-baseline gap-2">
+      <div className="px-6 pb-4 sticky top-0 z-30" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
+        <div className="flex items-center justify-between mb-[14px] min-h-10">
+              <h1 className={`text-[20px] font-bold tracking-tight flex items-baseline gap-2 ${isDarkMode ? 'text-[#CDCDCD]' : 'text-[#5D5D5D]'}`}>
                   {t('bank_config')}
               </h1>
-          </div>
           <PremiumButton 
               onClick={() => setIsCategoryManagerOpen(true)}
               title={t('manage')}

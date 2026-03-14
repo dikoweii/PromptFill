@@ -2250,6 +2250,137 @@
       ],
       "bestModel": "Seedance 2.0",
       "baseImage": "no_base_image"
+    },
+    {
+      "id": "tpl_transformers_vehicle_robot",
+      "name": {
+        "cn": "变形金刚载具变形",
+        "en": "Transformers Vehicle Robot"
+      },
+      "type": "video",
+      "content": {
+        "cn": "### 变形金刚载具变形视频\n\n**主体**：一辆{{vehicle_color}}的{{vehicle_brand}}{{vehicle_type}}，外形科幻。\n\n**动作**：在{{transform_location}}上疾驰，随后在运动中无缝变形为一个{{robot_color_scheme}}。\n\n**镜头**：{{transform_camera}}。\n\n**风格**：{{transform_style}}。",
+        "en": "### Transformers Vehicle Robot Transformation Video\n\n**Subject**: A {{vehicle_color}} {{vehicle_brand}} {{vehicle_type}} with sci-fi appearance.\n\n**Action**: Speeding along {{transform_location}}, then seamlessly transforming in motion into a {{robot_color_scheme}}.\n\n**Camera**: {{transform_camera}}.\n\n**Style**: {{transform_style}}."
+      },
+      "videoUrl": "https://img.wjwj.top/2026/03/05/6431bda45d8b83a23b47b37973f5afba.mp4",
+      "author": "ponyo波妞 @ponyodong",
+      "selections": {
+        "vehicle_type": {
+          "cn": "超级跑车",
+          "en": "Super Car"
+        },
+        "vehicle_color": {
+          "cn": "深灰色",
+          "en": "Dark Gray"
+        },
+        "vehicle_brand": {
+          "cn": "科幻超级跑车",
+          "en": "Sci-fi Super Car"
+        },
+        "robot_color_scheme": {
+          "cn": "深灰色类人机械机器人",
+          "en": "Dark Gray Humanoid Mech Robot"
+        },
+        "transform_location": {
+          "cn": "城市高速公路，背景有高楼大厦和其他车辆",
+          "en": "City highway with skyscrapers and other vehicles"
+        },
+        "transform_camera": {
+          "cn": "低角度跟随镜头（Tracking Shot），在变形时镜头向上摇拍（Tilt Up）",
+          "en": "Low angle Tracking Shot, Tilt Up during transformation"
+        },
+        "transform_style": {
+          "cn": "超写实CGI，好莱坞动作电影质感，精密的机械零件构造，金属质感，电影级光效",
+          "en": "Hyper-realistic CGI, Hollywood action movie quality, intricate mechanical parts, metallic texture, cinematic lighting"
+        }
+      },
+      "tags": [
+        "科幻",
+        "动作",
+        "影视",
+        "游戏"
+      ],
+      "language": [
+        "cn",
+        "en"
+      ],
+      "bestModel": "Seedance 2.0",
+      "baseImage": "optional_base_image",
+      "mode": "seedance"
+    },
+    {
+      "id": "tpl_local_weather_card",
+      "name": {
+        "cn": "本地特色天气卡片",
+        "en": "Local Weather Card"
+      },
+      "content": {
+        "cn": "### 本地特色天气卡片设计\n\n**整体风格：**\n拟物化{{ui_texture_style_1}}UI卡片，融合{{city_name_extended_1}}当地特色纹样与字体，绘制今天当地的天气预报卡片。\n\n**卡片结构：**\n\n**顶部区域 - 实时温度显示：**\n- 大号温度数字，使用当地特色字体\n- 天气图标（根据当天实际天气自动判断）\n- 日期与星期显示\n\n**中部区域 - 卡片主体：**\n- 质感：{{ui_texture_style_1}}\n- 装饰性纹样边框（AI根据城市文化特色自动生成匹配纹样）\n- 半透明背景层叠效果\n- 微妙的光影折射\n\n**底部区域 - 3D地标建筑：**\n- {{isometric_view_style}}\n- {{city_name_extended_1}}标志性建筑的艺术化概念表达\n- 展现该城市在当前天气下的氛围（AI智能判断天气并渲染）\n- 建筑细节精致，色彩柔和\n- 整体呈现梦幻而真实的视觉效果\n\n**视觉细节：**\n- 质感的模糊与折射效果\n- 当地文化纹样的精致融入（由AI深度思考并自动匹配）\n- 色调与天气状况智能匹配\n- 极简而富有设计感的排版",
+        "en": "### Local Weather Card Design with Cultural Aesthetic\n\n**Overall Style:**\nSkeuomorphic {{ui_texture_style}} UI card with {{city_name_extended}} local cultural patterns and typography, presenting today's weather forecast card.\n\n**Card Structure:**\n\n**Top Section - Real-time Temperature Display:**\n- Large temperature number using local characteristic font\n- Weather icon (AI automatically determines based on actual weather)\n- Date and weekday display\n\n**Middle Section - Card Body:**\n- Texture: {{ui_texture_style}}\n- Decorative pattern border (AI automatically generates matching patterns based on city culture)\n- Layered translucent background effect\n- Subtle light and shadow refraction\n\n**Bottom Section - 3D Landmark Building:**\n- {{isometric_view_style}}\n- Artistic conceptual expression of {{city_name_extended}}'s iconic landmark\n- Showcasing city atmosphere in current weather (AI intelligently determines and renders weather)\n- Exquisite architectural details, soft colors\n- Overall dreamy yet realistic visual effect\n\n**Visual Details:**\n- Blur and refraction effects of texture\n- Exquisite integration of local cultural patterns (AI deep thinking and automatic matching)\n- Color tones intelligently matching weather conditions\n- Minimalist yet design-savvy typography"
+      },
+      "imageUrl": "https://s3.bmp.ovh/2026/02/27/NlI0uLHd.jpg",
+      "author": "@tanshilong",
+      "selections": {
+        "city_name_extended": {
+          "cn": "米兰",
+          "en": "Milan"
+        },
+        "ui_texture_style": {
+          "cn": "毛玻璃拟物质感",
+          "en": "Frosted glass skeuomorphic texture"
+        },
+        "isometric_view_style": {
+          "cn": "标准轴测视角",
+          "en": "Standard isometric view"
+        }
+      },
+      "tags": [
+        "设计",
+        "天气",
+        "UI",
+        "城市"
+      ],
+      "language": [
+        "cn",
+        "en"
+      ],
+      "bestModel": "Nano Banana Pro",
+      "baseImage": "no_base_image"
+    },
+    {
+      "id": "tpl_creative_food_ad",
+      "name": {
+        "cn": "超写实创意食品广告",
+        "en": "Hyper-Realistic Creative Food Ad"
+      },
+      "content": {
+        "cn": "### 超写实创意食品广告\n\n**核心概念：**\n超写实创意广告场景，展现{{brand_fast_food}}的品牌魅力与产品特色。\n\n**主体场景：**\n一台巨型智能手机在{{ad_scene_environment}}内显示着{{brand_fast_food}}的订餐应用界面。\n\n**手机屏幕内容：**\n- 食物整齐排列在屏幕上，如同自动售货机一般\n- 显示{{brand_fast_food}}的招牌产品（AI根据品牌自动匹配产品类型）\n- 星级评分和用户评论清晰可见\n- 界面设计现代、简洁、易用\n\n**迷你员工互动场景：**\n身着围裙的迷你餐厅员工与手机进行各种创意互动（AI根据品牌和场景自动生成多样化的互动动作）：\n- 爬上绳子放置食物\n- 站在梯子上调整产品\n- 跪在地上检查界面\n- 举起外卖箱展示配送服务\n- 其他充满创意的互动（AI智能生成）\n\n**视觉风格：**\n- 趣味十足的比例对比（巨型手机 vs 迷你员工）\n- 超精细的纹理细节\n- 光泽逼真的食物效果\n- 电影级的灯光设计\n- 浅景深，突出主体\n\n**整体调性：**\n- 高端商业摄影风格\n- 焦点清晰锐利\n- 色调温暖诱人\n- 高度写实，细节丰富\n- 充满想象力的品牌故事\n- 超现实却又令人信服的构图",
+        "en": "### Hyper-Realistic Creative Food Advertisement\n\n**Core Concept:**\nHyper-realistic creative advertising scene showcasing the brand charm and product features of {{brand_fast_food}}.\n\n**Main Scene:**\nA giant smartphone displaying the {{brand_fast_food}} ordering app interface within {{ad_scene_environment}}.\n\n**Phone Screen Content:**\n- Food items neatly arranged on screen like a vending machine\n- Displaying {{brand_fast_food}}'s signature products (AI automatically matches product types based on brand)\n- Star ratings and customer reviews clearly visible\n- Modern, clean, and user-friendly interface design\n\n**Mini Staff Interaction Scenes:**\nApron-clad miniature restaurant staff creatively interact with the phone (AI automatically generates diverse interaction actions based on brand and scene):\n- Climbing ropes to place food items\n- Standing on ladders to adjust products\n- Kneeling to check the interface\n- Holding up delivery boxes to showcase delivery service\n- Other creative interactions (AI intelligently generated)\n\n**Visual Style:**\n- Playful proportional contrast (giant phone vs miniature staff)\n- Ultra-fine texture details\n- Realistic glossy food effects\n- Cinematic lighting design\n- Shallow depth of field, highlighting main subject\n\n**Overall Tone:**\n- High-end commercial photography style\n- Sharp, clear focus\n- Warm, appetizing color tones\n- Highly realistic with rich details\n- Imaginative brand storytelling\n- Surreal yet believable composition"
+      },
+      "imageUrl": "https://img.opennana.com/prompts/assets/202601/1769872306387-g03rj86v-1.jpeg",
+      "author": "@Kashberg_0",
+      "selections": {
+        "brand_fast_food": {
+          "cn": "麦当劳",
+          "en": "McDonald's"
+        },
+        "ad_scene_environment": {
+          "cn": "现代餐厅厨房",
+          "en": "Modern restaurant kitchen"
+        }
+      },
+      "tags": [
+        "广告",
+        "食品",
+        "创意",
+        "商业"
+      ],
+      "language": [
+        "cn",
+        "en"
+      ],
+      "bestModel": "Nano Banana Pro",
+      "baseImage": "no_base_image"
     }
   ]
 }

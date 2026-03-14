@@ -8,7 +8,7 @@
 export const AI_FEATURE_ENABLED = true;
 
 // 智能拆分功能开关
-export const AI_SMART_SPLIT_ENABLED = false;
+export const AI_SMART_SPLIT_ENABLED = true;
 
 // ===== AI 提供商配置 =====
 // 支持的 AI 提供商类型

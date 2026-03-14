@@ -285,17 +285,20 @@ export const getLocalized = (obj, language) => {
   if (!obj) return "";
   if (typeof obj === 'string') return obj;
 
-  // 处理对象格式
-  const localized = obj[language] || obj.cn || obj.en;
-
-  // 如果获取到的值不是字符串，转换为字符串
-  if (localized === null || localized === undefined) return "";
-  if (typeof localized !== 'string') {
-    console.warn('getLocalized: localized value is not a string, converting:', localized);
-    return String(localized);
+  // 优先取指定语言，使用严格判断（空字符串是合法值，不应 fallback）
+  if (obj[language] !== null && obj[language] !== undefined) {
+    const val = obj[language];
+    if (typeof val !== 'string') {
+      console.warn('getLocalized: localized value is not a string, converting:', val);
+      return String(val);
+    }
+    return val;
   }
 
-  return localized;
+  // 指定语言的 key 不存在时才 fallback（兼容单语言模板）
+  const fallback = obj.cn ?? obj.en ?? "";
+  if (typeof fallback !== 'string') return String(fallback);
+  return fallback;
 };
 
 // 获取系统语言 (非中文环境默认返回 en)

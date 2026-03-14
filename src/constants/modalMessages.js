@@ -7,35 +7,26 @@
  * 智能拆分确认弹窗文案
  */
 export const SMART_SPLIT_CONFIRM_MESSAGE = {
-  cn: `智能拆分将根据当前内容自动润色、结构化并提取变量，
-这将重写当前模板内容并可能创建新词库。
+  cn: `当前模板已包含变量，智能拆分将对整个提示词重新分析并提取变量。
 
-【Beta 测试版限制】
-  AI 理解能力有限，可能无法准确识别变量
-  拆分结果不稳定，建议手动调整
-  可能产生错误或意外的结果
-  建议在测试模板上使用，避免影响重要内容
+这将重写现有内容和变量配置，原有变量可能被删除或重置。
 
-确定继续吗？`,
+如不满意结果，可通过拆分后出现的「重置」按钮还原。`,
 
-  en: `Smart Split will polish, structure and extract variables based on
-current content. This will rewrite current template and may create new banks.
+  en: `This template already contains variables. Smart Split will re-analyze
+the full prompt and extract variables from scratch.
 
-[Beta Limitations]
-  Limited AI understanding, variable extraction may be inaccurate
-  Unstable results, manual adjustment recommended
-  May produce errors or unexpected results
-  Recommended for testing only, avoid using on important templates
+Existing variables may be removed or reset.
 
-Continue?`
+You can restore the previous state via the "Reset" button after splitting.`
 };
 
 /**
  * 智能拆分标题
  */
 export const SMART_SPLIT_CONFIRM_TITLE = {
-  cn: '智能拆分 (Beta)',
-  en: 'Smart Split (Beta)'
+  cn: '当前已有变量，确认重新拆分？',
+  en: 'Template has variables — confirm re-split?'
 };
 
 /**
@@ -43,8 +34,8 @@ export const SMART_SPLIT_CONFIRM_TITLE = {
  */
 export const SMART_SPLIT_BUTTON_TEXT = {
   confirm: {
-    cn: '确定拆分',
-    en: 'Confirm Split'
+    cn: '继续拆分',
+    en: 'Continue'
   },
   cancel: {
     cn: '取消',
